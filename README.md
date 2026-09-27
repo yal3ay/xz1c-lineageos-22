@@ -101,6 +101,6 @@ If needed, install Android 15 / arm64 GApps and the Sony add-on built for this p
 
 OTA release certificate SHA-256: `9162f30f5fe74c6998c6c06b9120dc75a0ac3f140b2234aa0befd2412dfa1159`. The project will keep these signing keys for future builds; private key material is not distributed. The OTA package enables `addon.d` retention for compatible add-ons, but an actual upgrade has not yet been device-tested.
 
-The currently published baseline does not include this project's OTA feed URL, so it cannot discover project updates automatically. This OTA bootstrap build includes the GitHub update feed address. Install this build manually once; the Updater can then check for later releases.
+The currently published baseline does not include this project's OTA feed URL, so it cannot discover project updates automatically. This OTA bootstrap build includes the GitHub update feed address. Install this build manually once; the Updater can then check for later releases. Each release currently uses a full OTA ZIP. Maintainer build, signing, and feed steps are documented in [OTA_RELEASE_WORKFLOW.md](OTA_RELEASE_WORKFLOW.md).
 
 Before a stable/public release, verify boot, mobile network and calls, camera, NFC, adopted storage, charging control, and an OTA between builds. Publish the corresponding kernel source and license notices. Never publish signing private keys, phone backups, recovery codes, or internal notes.
