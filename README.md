@@ -6,12 +6,14 @@
 
 ## 功能简介
 
+- VoLTE 开关开启且 IMS 已注册 LTE 语音能力时显示状态栏 VoLTE/LTE 图标；IMS 未注册时隐藏图标。
+- 禁止 `modem_switcher` 服务启动，避免该服务反复崩溃和产生日志。
 - 集成 KernelSU-Next；SUSFS 未启用。
-- 电池充电控制快捷设置及对应状态栏图标使用闪电图形。
+- 电池充电控制快捷设置和充电状态栏图标使用闪电图形。
 - 基础 ROM 与 Sony 应用、GApps 分包；基础 ROM 保留设备运行和 Sony 相机所需底层组件。
-- 提供与新签名基线配套的 recovery 和 OTA 证书。
+- 配套 recovery 信任本项目 OTA 证书；本 OTA 自举版本已内置 GitHub 更新清单地址。
 
-以上列出的是构建内容。换签名后的开机、相机、通信、NFC、采用存储 SD 卡和更新流程尚须实机验证。
+以上为源码/产物核对结果，不代表已完成实机验证。换签名后的开机、VoLTE 实际通话、相机、NFC、采用存储 SD 卡及 OTA 安装仍须在设备上验证。LOS 22 的 5 GHz Wi-Fi 关联不稳定问题仍待调查，不能视为已修复。
 
 实际 Android 安全补丁日期为 **2026-08-01**。KernelSU 已启用，SUSFS 未启用。ADB 仍要求设备授权。
 
@@ -76,12 +78,14 @@ Android 15 pre-release for the Japanese Xperia XZ1 Compact SO-02K (device target
 
 ### Features
 
+- The VoLTE/LTE status icon appears when the VoLTE setting is enabled and IMS reports LTE voice capability; it hides when IMS is not registered.
+- The `modem_switcher` service is disabled to prevent repeated crashes and log generation.
 - KernelSU-Next is integrated; SUSFS is disabled.
-- The battery charging control tile and its status bar icon use a lightning symbol.
+- The battery charging control tile and charging status bar icon use a lightning symbol.
 - The base ROM is separate from Sony apps and GApps. Device and Sony camera support libraries remain in the base ROM.
-- Matching recovery trusts this project's OTA certificate.
+- Matching recovery trusts this project's OTA certificate. This OTA bootstrap build includes the GitHub update feed URL.
 
-These describe the build contents, not completed device testing. Boot, camera, calls, NFC, adopted SD storage, and OTA installation still need verification on hardware. Android security patch level: **2026-08-01**. ADB requires device authorization.
+These are source/artifact checks, not completed device tests. Boot, real VoLTE calls, camera, NFC, adopted SD storage, and OTA installation still need verification on hardware. The LOS 22 5 GHz Wi-Fi association issue remains under investigation and is not fixed by this release. Android security patch level: **2026-08-01**. ADB requires device authorization.
 
 ### Downloads and installation
 
@@ -97,6 +101,6 @@ If needed, install Android 15 / arm64 GApps and the Sony add-on built for this p
 
 OTA release certificate SHA-256: `9162f30f5fe74c6998c6c06b9120dc75a0ac3f140b2234aa0befd2412dfa1159`. The project will keep these signing keys for future builds; private key material is not distributed. The OTA package enables `addon.d` retention for compatible add-ons, but an actual upgrade has not yet been device-tested.
 
-The currently published baseline does not include this project's OTA feed URL, so it cannot discover project updates automatically. The upcoming OTA bootstrap build will include the GitHub update feed address. Install that build manually once; the Updater can then check for later releases.
+The currently published baseline does not include this project's OTA feed URL, so it cannot discover project updates automatically. This OTA bootstrap build includes the GitHub update feed address. Install this build manually once; the Updater can then check for later releases.
 
 Before a stable/public release, verify boot, mobile network and calls, camera, NFC, adopted storage, charging control, and an OTA between builds. Publish the corresponding kernel source and license notices. Never publish signing private keys, phone backups, recovery codes, or internal notes.
