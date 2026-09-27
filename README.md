@@ -2,7 +2,16 @@
 
 2026-09-27 项目私钥签名基线，Android 15，设备目标 `lilac_dcm`。
 
-这是首次采用本项目密钥的预发布版本。该版本包含自定义内核、KernelSU-Next 及系统功能改动，构建类型为 `userdebug`。换签名后的开机、相机、通信、NFC、采用存储 SD 卡和更新流程尚须实机验证。
+这是面向日本版 Xperia XZ1 Compact（SO-02K，设备代号 `lilac_dcm`）的 Android 15 / LineageOS 22.2 预发布版本，构建类型为 `userdebug`。
+
+## 功能简介
+
+- 集成 KernelSU-Next；SUSFS 未启用。
+- 电池充电控制快捷设置及对应状态栏图标使用闪电图形。
+- 基础 ROM 与 Sony 应用、GApps 分包；基础 ROM 保留设备运行和 Sony 相机所需底层组件。
+- 提供与新签名基线配套的 recovery 和 OTA 证书。
+
+以上列出的是构建内容。换签名后的开机、相机、通信、NFC、采用存储 SD 卡和更新流程尚须实机验证。
 
 实际 Android 安全补丁日期为 **2026-08-01**。KernelSU 已启用，SUSFS 未启用。ADB 仍要求设备授权。
 
