@@ -54,7 +54,7 @@ OTA release certificate SHA-256：
 
 ROM 更新包启用 `addon.d`，供兼容的 GApps 和索尼附加包保留安装内容。此机制仍须在新版基线上完成实际更新验证。
 
-自动 OTA 下载地址将在 GitHub 仓库及 Release 地址确定后配置。本版用于建立新的签名基线，尚未提供可用的自动 OTA 服务。
+当前已发布的签名基线没有编入自定义 OTA 地址，因此它不会自动发现本项目更新。即将发布的 OTA 自举版会内置 GitHub 更新清单地址。现有设备须先手动安装自举版；之后 Updater 才能检查后续 OTA。
 
 ## 发布前应补齐
 
@@ -65,4 +65,38 @@ ROM 更新包启用 `addon.d`，供兼容的 GApps 和索尼附加包保留安�
 
 ## 上传方式
 
-在 GitHub Releases 中创建 **Pre-release**，把 ROM、recovery 和 SHA256SUMS 作为附件上传，正文使用本说明。ROM 大于普通仓库文件限制，应通过 Releases 分发；[GitHub 官方说明](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases)规定单个 Release 附件须小于 2 GiB。
+ROM 大于普通仓库文件限制，应通过 Releases 分发；[GitHub 官方说明](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases)规定单个 Release 附件须小于 2 GiB。
+
+
+## English
+
+# Xperia XZ1 Compact SO-02K — LineageOS 22.2
+
+Android 15 pre-release for the Japanese Xperia XZ1 Compact SO-02K (device target: `lilac_dcm`). This is the first baseline signed with this project's private release keys. Build type: `userdebug`.
+
+### Features
+
+- KernelSU-Next is integrated; SUSFS is disabled.
+- The battery charging control tile and its status bar icon use a lightning symbol.
+- The base ROM is separate from Sony apps and GApps. Device and Sony camera support libraries remain in the base ROM.
+- Matching recovery trusts this project's OTA certificate.
+
+These describe the build contents, not completed device testing. Boot, camera, calls, NFC, adopted SD storage, and OTA installation still need verification on hardware. Android security patch level: **2026-08-01**. ADB requires device authorization.
+
+### Downloads and installation
+
+The [GitHub Releases page](https://github.com/yal3ay/xz1c-lineageos-22/releases) contains the base ROM and matching recovery. Verify downloads with `shasum -a 256 -c SHA256SUMS`.
+
+This release is intended only for an unlocked Japanese Xperia XZ1 Compact SO-02K. Other XZ1 Compact variants are unverified. The previous ROM used public test keys; this release uses a different system and OTA signing identity. Do not expect a data-preserving OTA from the old signing baseline. Install the OTA bootstrap release manually after confirming your backups can be restored.
+
+**The encryption key for adopted storage is kept in the phone's data partition. Wiping data can make apps and files on the adopted SD card unreadable. Export the card's files, app installers, and needed app data separately first. A successful Seedvault status does not guarantee every app's data can be restored.**
+
+If needed, install Android 15 / arm64 GApps and the Sony add-on built for this project's new platform key in the same recovery session, after the base ROM and before the first boot. Do not mix in an older Sony add-on signed with the old platform key.
+
+### Signing and OTA bootstrap
+
+OTA release certificate SHA-256: `9162f30f5fe74c6998c6c06b9120dc75a0ac3f140b2234aa0befd2412dfa1159`. The project will keep these signing keys for future builds; private key material is not distributed. The OTA package enables `addon.d` retention for compatible add-ons, but an actual upgrade has not yet been device-tested.
+
+The currently published baseline does not include this project's OTA feed URL, so it cannot discover project updates automatically. The upcoming OTA bootstrap build will include the GitHub update feed address. Install that build manually once; the Updater can then check for later releases.
+
+Before a stable/public release, verify boot, mobile network and calls, camera, NFC, adopted storage, charging control, and an OTA between builds. Publish the corresponding kernel source and license notices. Never publish signing private keys, phone backups, recovery codes, or internal notes.
