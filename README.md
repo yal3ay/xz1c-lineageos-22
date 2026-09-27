@@ -6,14 +6,14 @@
 
 ## 功能简介
 
-- VoLTE 开关开启且 IMS 已注册 LTE 语音能力时显示状态栏 VoLTE/LTE 图标；IMS 未注册时隐藏图标。
-- 禁止 `modem_switcher` 服务启动，避免该服务反复崩溃和产生日志。
-- 集成 KernelSU-Next；SUSFS 未启用。
-- 电池充电控制快捷设置和充电状态栏图标使用闪电图形。
-- 基础 ROM 与 Sony 应用、GApps 分包；基础 ROM 保留设备运行和 Sony 相机所需底层组件。
-- 配套 recovery 信任本项目 OTA 证书；本 OTA 自举版本已内置 GitHub 更新清单地址。
+- VoLTE 开关及按 IMS LTE 语音状态显示的状态栏图标。
+- 电池充电控制快捷设置及闪电样式的充电状态栏图标。
+- KernelSU-Next。
+- `modem_switcher` 服务禁用配置。
+- 基础 ROM、Sony 应用包和 GApps 分包；基础 ROM 保留设备运行及 Sony 相机所需底层组件。
+- 配套 recovery 和项目 OTA 证书；本自举版本内置 GitHub OTA 更新清单地址。
 
-以上为源码/产物核对结果，不代表已完成实机验证。换签名后的开机、VoLTE 实际通话、相机、NFC、采用存储 SD 卡及 OTA 安装仍须在设备上验证。LOS 22 的 5 GHz Wi-Fi 关联不稳定问题仍待调查，不能视为已修复。
+以上为源码/产物功能说明；换签名后的开机、VoLTE 通话、相机、NFC、采用存储 SD 卡及 OTA 安装尚未完成实机验证。
 
 实际 Android 安全补丁日期为 **2026-08-01**。KernelSU 已启用，SUSFS 未启用。ADB 仍要求设备授权。
 
@@ -78,14 +78,14 @@ Android 15 pre-release for the Japanese Xperia XZ1 Compact SO-02K (device target
 
 ### Features
 
-- The VoLTE/LTE status icon appears when the VoLTE setting is enabled and IMS reports LTE voice capability; it hides when IMS is not registered.
-- The `modem_switcher` service is disabled to prevent repeated crashes and log generation.
-- KernelSU-Next is integrated; SUSFS is disabled.
-- The battery charging control tile and charging status bar icon use a lightning symbol.
-- The base ROM is separate from Sony apps and GApps. Device and Sony camera support libraries remain in the base ROM.
-- Matching recovery trusts this project's OTA certificate. This OTA bootstrap build includes the GitHub update feed URL.
+- VoLTE switch and a status bar icon reflecting IMS LTE voice status.
+- Battery charging control tile and a lightning style charging status bar icon.
+- KernelSU-Next.
+- `modem_switcher` service disabled in the device configuration.
+- Base ROM, Sony apps, and GApps are distributed separately; device and Sony camera support libraries remain in the base ROM.
+- Matching recovery and project OTA certificate; this bootstrap build includes the GitHub OTA feed URL.
 
-These are source/artifact checks, not completed device tests. Boot, real VoLTE calls, camera, NFC, adopted SD storage, and OTA installation still need verification on hardware. The LOS 22 5 GHz Wi-Fi association issue remains under investigation and is not fixed by this release. Android security patch level: **2026-08-01**. ADB requires device authorization.
+These are source/artifact feature notes; boot, VoLTE calls, camera, NFC, adopted SD storage, and OTA installation on the new signing baseline have not been verified on hardware. Android security patch level: **2026-08-01**. ADB requires device authorization.
 
 ### Downloads and installation
 
