@@ -33,8 +33,6 @@
 
 仅适用于已解锁 bootloader 的 Xperia XZ1 Compact SO-02K。其他机型和其他 XZ1 Compact 变体未验证。
 
-旧版使用源码公开测试密钥，新版更换了系统应用和 OTA 的签名身份。旧版不能作为可直接保留数据 OTA 升级的基线；首次迁移应在备份确认可恢复后清除数据安装。
-
 **采用存储 SD 卡的加密密钥保存在手机数据分区。清除手机数据可能使原卡上的应用和文件无法读取。必须先独立导出卡内文件、应用安装包及必要应用数据。Seedvault 显示成功或备份目录有文件，并不保证所有应用数据都可恢复。**
 
 1. 在电脑上运行 `shasum -a 256 -c SHA256SUMS` 核对下载文件。
@@ -46,28 +44,6 @@
 
 恢复备份时，旧平台签名的系统/索尼 APK 不能直接覆盖新版组件。第三方应用若保留原签名，可按其备份支持情况恢复；此说明不承诺所有应用数据或登录状态恢复一致。
 
-## 签名与后续更新
-
-OTA release certificate SHA-256：
-
-`9162f30f5fe74c6998c6c06b9120dc75a0ac3f140b2234aa0befd2412dfa1159`
-
-本项目会保留同一套签名密钥制作后续版本。系统自编译 APEX 模块使用项目独立密钥；上游预签名组件保留原签名。密钥私有部分不随下载文件发布。
-
-ROM 更新包启用 `addon.d`，供兼容的 GApps 和索尼附加包保留安装内容。此机制仍须在新版基线上完成实际更新验证。
-
-当前已发布的签名基线没有编入自定义 OTA 地址，因此它不会自动发现本项目更新。即将发布的 OTA 自举版会内置 GitHub 更新清单地址。现有设备须先手动安装自举版；之后 Updater 才能检查后续 OTA。
-
-## 发布前应补齐
-
-- 实机验证并记录：开机、移动网络/通话、相机、NFC、采用存储、充电控制，以及新签名版本间的 OTA。
-- 提供对应内核源码、KernelSU-Next 及实际内核改动和构建说明，并保留相关许可证。
-- 在 Release 中写明实际安全补丁日期、已知问题及设备支持范围。
-- 不公开签名私钥、手机备份、恢复码或内部项目记录。
-
-## 上传方式
-
-ROM 大于普通仓库文件限制，应通过 Releases 分发；[GitHub 官方说明](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases)规定单个 Release 附件须小于 2 GiB。
 
 
 ## English
@@ -97,10 +73,6 @@ This release is intended only for an unlocked Japanese Xperia XZ1 Compact SO-02K
 
 If needed, install Android 15 / arm64 GApps and the Sony add-on built for this project's new platform key in the same recovery session, after the base ROM and before the first boot. Do not mix in an older Sony add-on signed with the old platform key.
 
-### Signing and OTA bootstrap
 
-OTA release certificate SHA-256: `9162f30f5fe74c6998c6c06b9120dc75a0ac3f140b2234aa0befd2412dfa1159`. The project will keep these signing keys for future builds; private key material is not distributed. The OTA package enables `addon.d` retention for compatible add-ons, but an actual upgrade has not yet been device-tested.
 
-The currently published baseline does not include this project's OTA feed URL, so it cannot discover project updates automatically. This OTA bootstrap build includes the GitHub update feed address. Install this build manually once; the Updater can then check for later releases. Each release currently uses a full OTA ZIP. Maintainer build, signing, and feed steps are documented in [OTA_RELEASE_WORKFLOW.md](OTA_RELEASE_WORKFLOW.md).
 
-Before a stable/public release, verify boot, mobile network and calls, camera, NFC, adopted storage, charging control, and an OTA between builds. Publish the corresponding kernel source and license notices. Never publish signing private keys, phone backups, recovery codes, or internal notes.
