@@ -1,12 +1,12 @@
 {
   "response": [
     {
-      "datetime": 1791467997,
-      "filename": "lineage-22.2-20261008-UNOFFICIAL-lilac_dcm-ota.zip",
-      "id": "1f561502e1fe7c409e7b1cd757200b2fe230f18ba2ac5df6fd865f9702e18082",
+      "datetime": 1791504011,
+      "filename": "lineage-22.2-20261009-UNOFFICIAL-lilac_dcm-ota.zip",
+      "id": "c1d4318a7479a204a0beed5fd1fe2bf5ebde77ec64d9483ba77d20ba32d0e589",
       "romtype": "UNOFFICIAL",
-      "size": 1117597340,
-      "url": "https://github.com/yal3ay/xz1c-lineageos-22/releases/download/22.2-20261008-r4/lineage-22.2-20261008-UNOFFICIAL-lilac_dcm-ota.zip",
+      "size": 1117500883,
+      "url": "https://github.com/yal3ay/xz1c-lineageos-22/releases/download/22.2-20261009/lineage-22.2-20261009-UNOFFICIAL-lilac_dcm-ota.zip",
       "version": "22.2"
     }
   ]
