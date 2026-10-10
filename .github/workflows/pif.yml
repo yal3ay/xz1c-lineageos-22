@@ -17,7 +17,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Generate pif.json
         run: |
-          python3 tools/gen_pif.py > /tmp/pif.json
+          python3 tools/gen_pif.py "$(python3 -c "import json; print(json.load(open(\"ota/pif.json\")).get(\"DEVICE\",\"\"))" 2>/dev/null)" > /tmp/pif.json
           python3 -c "import json; d=json.load(open(\"/tmp/pif.json\")); assert d[\"FINGERPRINT\"]"
           # only commit when the build itself changed, not just the timestamp
           if [ -f ota/pif.json ] && python3 -c "import json,sys; a=json.load(open(\"ota/pif.json\")); b=json.load(open(\"/tmp/pif.json\")); a.pop(\"generated\",None); b.pop(\"generated\",None); sys.exit(0 if a==b else 1)"; then

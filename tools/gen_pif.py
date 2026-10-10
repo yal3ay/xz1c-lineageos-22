@@ -34,6 +34,9 @@ def main():
     flash = get("https://flash.android.com/")
     key = re.search(r'<body data-client-config=[^;]*;([^&]*)&', flash).group(1)
     random.shuffle(rows)
+    # keep the device of the current pif.json while it still has a canary build
+    prefer = sys.argv[1] if len(sys.argv) > 1 else ""
+    rows.sort(key=lambda r: r[0] != prefer)
     for device, model in rows:
         product = device + "_beta"
         try:
