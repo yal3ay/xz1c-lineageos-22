@@ -1,0 +1,31 @@
+name: Refresh Play Integrity values
+
+# Google revokes spoofed fingerprints every few weeks. Phones fetch ota/pif.json once a
+# day (System Manager > Google check), so regenerate it from the latest Pixel Canary build.
+on:
+  schedule:
+    - cron: "17 3 * * 1,4"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate pif.json
+        run: |
+          python3 tools/gen_pif.py > /tmp/pif.json
+          python3 -c "import json; d=json.load(open(\"/tmp/pif.json\")); assert d[\"FINGERPRINT\"]"
+          # only commit when the build itself changed, not just the timestamp
+          if [ -f ota/pif.json ] && python3 -c "import json,sys; a=json.load(open(\"ota/pif.json\")); b=json.load(open(\"/tmp/pif.json\")); a.pop(\"generated\",None); b.pop(\"generated\",None); sys.exit(0 if a==b else 1)"; then
+            echo "unchanged"; exit 0
+          fi
+          cp /tmp/pif.json ota/pif.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ota/pif.json
+          git commit -m "pif: $(python3 -c "import json; print(json.load(open(\"ota/pif.json\"))[\"FINGERPRINT\"])")"
+          git push
