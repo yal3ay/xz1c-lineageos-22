@@ -4,6 +4,24 @@
 
 这是面向日本版 Xperia XZ1 Compact（SO-02K，设备代号 `lilac_dcm`）的 Android 15 / LineageOS 22.2 预发布版本，构建类型为 `userdebug`。
 
+## Source code / 源码
+
+The source for this ROM is published in these repositories:
+
+- Device tree (`lilac`): https://github.com/yal3ay/android_device_sony_lilac
+- Shared Yoshino device tree: https://github.com/yal3ay/android_device_sony_yoshino-common
+- Kernel (Linux 4.4.302, GPL-2.0, complete corresponding source): https://github.com/yal3ay/android_kernel_sony_msm8998
+- Local manifests and blob-extraction notes: https://github.com/yal3ay/xz1c_local_manifests
+- Patches for modified AOSP/LineageOS projects: https://github.com/yal3ay/xz1c_lineageos_22_patches
+
+Sony proprietary files (`vendor/sony/**`) and device-extracted blobs are not
+published; extract them from a device or firmware image you legally own. No
+signing keys are published.
+
+本 ROM 的源碼公開在以上倉庫；內核是 GPL-2.0，完整對應源碼在 kernel repo。
+`vendor/sony/**` 與裝置提取 blob 不公開，請自行從合法持有的裝置或固件提取。
+不公開任何簽名私鑰。
+
 ## 功能简介
 
 - VoLTE 开关及按 IMS LTE 语音状态显示的状态栏图标。
