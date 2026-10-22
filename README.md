@@ -22,6 +22,27 @@ signing keys are published.
 `vendor/sony/**` 與裝置提取 blob 不公開，請自行從合法持有的裝置或固件提取。
 不公開任何簽名私鑰。
 
+## Signing certificate fingerprints (SHA-256)
+
+Only the public certificate fingerprints are published. Certificate files and
+private keys are not included in any source repository.
+
+```
+bluetooth     4E:E2:4D:89:CE:2D:60:E5:90:E4:A5:31:01:62:E5:2C:17:3F:E1:64:4F:06:BE:D8:DA:6E:C6:8D:38:FA:3B:CB
+media         5B:B1:76:43:F9:D6:AC:78:67:0D:12:04:BC:38:94:7E:11:88:5D:72:69:B6:4C:8C:BB:86:15:6B:52:9E:B0:20
+networkstack  24:D3:9D:61:27:AA:76:ED:E9:75:E4:59:93:EF:D5:5E:69:5F:C8:FD:52:78:83:AD:D9:26:A4:F3:B5:32:2A:5C
+nfc           D9:76:2B:EC:5E:D2:76:65:99:D2:0A:FA:FF:D3:A3:BA:91:17:A2:C9:58:63:B1:3C:99:7F:DD:7A:D2:88:48:0B
+platform      C0:4D:ED:72:8A:A8:4B:38:87:7A:DA:2E:A0:6F:A7:63:2E:82:FC:83:C1:AD:DF:20:6A:2B:39:2C:E5:4E:FD:E6
+releasekey    91:62:F3:0F:5F:E7:4C:69:98:C6:C0:6B:91:20:DC:75:A0:AC:3F:14:0B:22:34:AA:0B:EF:D2:41:2D:FA:11:59
+sdk_sandbox   7B:CE:7F:2B:4E:3D:D8:A3:38:E6:5C:DD:BD:DA:A1:98:E6:68:EA:B8:6B:36:98:BD:18:D0:33:65:15:04:05:C9
+shared        B2:1E:0B:1F:DD:67:BA:3E:D0:03:2D:0A:4A:F3:5C:CA:3E:4C:A2:65:51:21:56:D1:58:79:7B:FD:E8:37:C2:07
+testkey       34:8C:61:3A:CB:3C:31:85:55:93:9F:00:EA:8F:EE:77:27:CF:87:6D:0B:01:84:A8:10:05:2B:2A:0B:2E:10:68
+```
+
+The `testkey` entry is a project-generated certificate, not the public AOSP
+test key. Do not use these fingerprints to verify a download; verify the
+download hashes in `SHA256SUMS`.
+
 ## 功能简介
 
 - VoLTE 开关及按 IMS LTE 语音状态显示的状态栏图标。
