@@ -13,7 +13,7 @@ Runbook for future maintainers and agents of `yal3ay/xz1c-lineageos-22`.
 
 ## Per-release steps
 
-1. Build `lineage_lilac_dcm` using the build host's `BUILD-RULES.md` and `/home/joey/build.sh`; do not run raw `m`/`mka` commands.
+1. Build `lineage_lilac_dcm` using the build host's `BUILD-RULES.md` and `~/build.sh`; do not run raw `m`/`mka` commands.
 2. Confirm `lineage.updater.uri` is present in `system/build.prop` and points to `https://raw.githubusercontent.com/yal3ay/xz1c-lineageos-22/main/ota/lilac.json`.
 3. Create the full OTA ZIP from the target-files using the existing project private keys and the established signing script. Preserve `addon.d` support (`--backup=true`). Extract the matching recovery from the same signed target-files.
 4. Verify the OTA certificate/signature, platform APK and source-built APEX signatures, recovery OTA trust, target device, package contents, and SHA-256 hashes. Confirm the OTA's `post-timestamp` is newer than the previous release.
