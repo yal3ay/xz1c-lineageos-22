@@ -1,0 +1,33 @@
+--- a/drivers/input/touchscreen/clearpad_core.c
++++ b/drivers/input/touchscreen/clearpad_core.c
+@@ -2314,11 +2314,16 @@
+ 	}
+ 
+ 	switch (this->chip_id) {
+-	case SYN_CHIP_3330:
+ 	case SYN_CHIP_332U:
+ 		LOGD(this, "already disabled wakeup gesture by HW reset\n");
+ 		break;
++	case SYN_CHIP_3330:
+ 	case SYN_CHIP_3500:
++		/*
++		 * S3330 may be put back into gesture mode after its reset
++		 * interrupt, before the display unblank notifier runs. Do not
++		 * assume the earlier reset still guarantees normal reporting.
++		 */
+ 		/* F12_2D_CTRL27_00: Wakeup Gesture Enable */
+ 		rc = clearpad_put(SYNA(this, F12_2D, CTRL, 27), 0);
+ 		if (rc) {
+@@ -2340,6 +2345,12 @@
+ 		if (rc) {
+ 			LOGE(this, "failed to disable report gesture\n");
+ 			goto end;
++		}
++
++		/* The existing S3500 calibration is not needed on S3330. */
++		if (this->chip_id == SYN_CHIP_3330) {
++			LOGI(this, "S3330 normal touch reporting restored\n");
++			break;
+ 		}
+ 
+ 		/* F54_ANALOG_CMD00: Analog Command */
