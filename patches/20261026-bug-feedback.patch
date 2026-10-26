@@ -1,0 +1,1210 @@
+diff --git a/apps/ZramStatus/.gitignore b/apps/ZramStatus/.gitignore
+new file mode 100644
+--- /dev/null
++++ b/apps/ZramStatus/.gitignore
+@@ -0,0 +1,4 @@
++
++# Build-private credential.
++src/main/java/org/lineageos/zramstatus/FeedbackProvider.java
++*.env
+diff --git a/apps/ZramStatus/README-bug-feedback.md b/apps/ZramStatus/README-bug-feedback.md
+new file mode 100644
+--- /dev/null
++++ b/apps/ZramStatus/README-bug-feedback.md
+@@ -0,0 +1,33 @@
++# Bug 反馈
++
++这是系统管家的可选功能，默认关闭。仅在用户逐份查看并确认后，才提交有限技术字段到维护者后台。
++
++## 编译前准备
++
++`src/main/java/org/lineageos/zramstatus/FeedbackProvider.java` 是私有生成文件，不能进入 Git。公开源码只保留 `.example` 模板和生成工具。
++
++在编译机建立权限为0600的私有配置（不要放在源码仓库），仅包含一行 `INBOX_UPLOAD_TOKEN=实际令牌`。此令牌应与服务器私有环境文件一致；不要包含管理密码，也不要在命令行参数、报告或聊天里写出令牌。
++
++```sh
++python3 apps/ZramStatus/tools/provision-feedback.py \
++  --config ~/.config/xz1c-feedback/client.env --source apps/ZramStatus
++/home/joey/build.sh codex-system-feedback ZramStatus
++```
++
++上面的第一个命令在 `vendor/sony/lilac` 仓库根目录执行。必须在编译开始前生成，编译期间不能改源码。
++
++安装包必须包含上传凭据才能提交，因此持有安装包的人可能提取这个共用的、仅能上传的令牌。它不是用户身份凭证，不能读取或删除后台报告。后台还必须保留字段校验、大小限制、频率限制和独立管理密码；不能把共用令牌当作防滥用的唯一保障。
++
++## 完整系统集成
++
++产品配置把 `xz1c-bug-feedback.xml` 复制到 `/system/etc/sysconfig/`。它允许受保护的错误记录事件唤起已由用户启用的反馈组件，避免常驻进程或周期查询。
++
++仅更新系统管家安装包无法增加已启动系统的事件允许配置，且新增的错误记录读取权限可能不会在旧系统上自动授予。因此界面会关闭自动收集入口，并提示需要维护者提供的完整系统更新；仍然可以手动创建、查看并提交报告。
++
++完整系统首次启动后，须验收读取权限、后台自动事件、主用户过滤、静默通知和默认关闭状态。不能把旧系统上的定向模拟事件测试当成完整系统首启验证。
++
++## 数据边界
++
++仅有版本、发生分钟、错误类别、代码位置、固定机型和每次随机的报告编号。不附带设备唯一标识、账号、聊天、照片或原始异常消息。手动反馈只能选择预设类别，不提供自由文本输入。
++
++本机最多20份、有效7天，过期文件下次使用时清理。后台最多2000份、保留30天，定期清理。上传失败不自动重试。
+diff --git a/apps/ZramStatus/src/main/AndroidManifest.xml b/apps/ZramStatus/src/main/AndroidManifest.xml
+--- a/apps/ZramStatus/src/main/AndroidManifest.xml
++++ b/apps/ZramStatus/src/main/AndroidManifest.xml
+@@ -21,6 +21,9 @@
+     <uses-permission android:name="android.permission.FORCE_STOP_PACKAGES" />
+     <uses-permission android:name="android.permission.GET_ACCOUNTS_PRIVILEGED" />
+     <uses-permission android:name="lineageos.permission.WRITE_SETTINGS" />
++    <uses-permission android:name="android.permission.READ_LOGS" />
++    <uses-permission android:name="android.permission.READ_DROPBOX_DATA" />
++    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+     <queries>
+         <package android:name="com.sonymobile.xperiaweather" />
+     </queries>
+@@ -54,6 +57,15 @@
+             android:permission="android.permission.BIND_JOB_SERVICE" />
+         <service android:name=".NasScanJob" android:exported="false"
+             android:permission="android.permission.BIND_JOB_SERVICE" />
++        <activity android:name=".FeedbackActivity" android:exported="false"
++            android:theme="@android:style/Theme.DeviceDefault.Light.NoActionBar" />
++        <receiver android:name=".FeedbackReceiver" android:exported="true" android:enabled="false"
++            android:permission="android.permission.READ_DROPBOX_DATA">
++            <intent-filter>
++                <action android:name="android.intent.action.DROPBOX_ENTRY_ADDED" />
++                <action android:name="android.intent.action.BOOT_COMPLETED" />
++            </intent-filter>
++        </receiver>
+         <activity android:name=".FeatureActivity" android:exported="false"
+             android:theme="@android:style/Theme.DeviceDefault.Light.NoActionBar" />
+         <!-- xz1c 2026-10-16: 主題色暫時停用（使用者：先註解，之後再做）。
+diff --git a/apps/ZramStatus/src/main/java/org/lineageos/zramstatus/CrashSanitizer.java b/apps/ZramStatus/src/main/java/org/lineageos/zramstatus/CrashSanitizer.java
+new file mode 100644
+--- /dev/null
++++ b/apps/ZramStatus/src/main/java/org/lineageos/zramstatus/CrashSanitizer.java
+@@ -0,0 +1,102 @@
++package org.lineageos.zramstatus;
++
++import java.util.ArrayList;
++import java.util.Arrays;
++import java.util.Collections;
++import java.util.LinkedHashSet;
++import java.util.List;
++import java.util.Set;
++import java.util.regex.Matcher;
++import java.util.regex.Pattern;
++
++/** Extracts a narrow technical schema. Raw messages, paths and log lines never leave this class. */
++final class CrashSanitizer {
++    static final int MAX_INPUT = 65536;
++    static final int MAX_FRAMES = 48;
++    static final Set<String> TAGS = Collections.unmodifiableSet(new LinkedHashSet<>(Arrays.asList(
++            "data_app_crash", "system_app_crash", "system_server_crash",
++            "data_app_native_crash", "system_app_native_crash", "system_server_native_crash",
++            "data_app_anr", "system_app_anr", "system_server_anr")));
++    private static final String NAME = "[A-Za-z_$][A-Za-z0-9_$]*";
++    private static final String QUALIFIED = NAME + "(?:\\." + NAME + ")+";
++    private static final Pattern PACKAGE = Pattern.compile("^Package: (" + QUALIFIED + ")(?: v[0-9]+(?: .*)?)?$");
++    private static final Pattern PROCESS = Pattern.compile("^Process: (" + QUALIFIED + ")(?:[:][A-Za-z0-9_.-]+)?$");
++    private static final Pattern UID = Pattern.compile("^UID: ([0-9]{1,8})$", Pattern.CASE_INSENSITIVE);
++    private static final Pattern EXCEPTION = Pattern.compile(
++            "^(?:(?:Caused by|Suppressed): )?((?:" + NAME + "\\.)*" + NAME
++                    + ")(?::.*)?$");
++    private static final Pattern FRAME = Pattern.compile(
++            "^at ((?:" + NAME + "\\.)+(?:" + NAME + "|<init>|<clinit>))"
++                    + "\\(((?:[A-Za-z0-9_$]+\\.(?:java|kt)(?::[0-9]{1,6})?)|Unknown Source|Native Method)\\)$");
++    private static final Pattern NATIVE = Pattern.compile(
++            "^#[0-9]{2}\\s+pc\\s+([0-9a-fA-F]{1,16})\\s+[^\\s]*[/]"
++                    + "(lib[A-Za-z0-9_.+-]{1,100}\\.so)(?:\\s.*)?$");
++    private static final Pattern SIGNAL = Pattern.compile("^signal (?:4|6|7|8|11|31) \\((SIGILL|SIGABRT|SIGBUS|SIGFPE|SIGSEGV|SIGSYS)\\).*$");
++
++    static final class Result {
++        String packageName;
++        int uid = -1; // Only used in memory for the current-user ownership check; never serialized.
++        final String kind;
++        String signal = "";
++        final List<String> exceptions = new ArrayList<>();
++        final List<String> frames = new ArrayList<>();
++        Result(String kind) { this.kind = kind; }
++    }
++
++    static Result parse(String tag, String input, int userId) {
++        if (!TAGS.contains(tag) || input == null || userId != 0) return null;
++        String text = input.substring(0, Math.min(input.length(), MAX_INPUT));
++        Result r = new Result(tag.endsWith("_anr") ? "anr"
++                : tag.endsWith("_native_crash") ? "native_crash" : "crash");
++        boolean systemServer = tag.startsWith("system_server_");
++        boolean systemServerHeader = false;
++        // Header fields are accepted only before the first blank line, not from exception messages.
++        boolean inHeader = true;
++        boolean packageFound = false;
++        for (String line : text.split("\\r?\\n", -1)) {
++            String s = line.trim();
++            if (s.isEmpty()) { inHeader = false; continue; }
++            // Bound regex recursion and parsing cost even for malformed crash text.
++            if (s.length() > 512) continue;
++            Matcher m;
++            if (inHeader) {
++                if (s.equals("Process: system_server")) systemServerHeader = true;
++                if ((m = UID.matcher(s)).matches()) {
++                    try { r.uid = Integer.parseInt(m.group(1)); } catch (NumberFormatException ignored) { }
++                }
++                if (!packageFound && (m = PACKAGE.matcher(s)).matches()) {
++                    r.packageName = m.group(1); packageFound = true;
++                }
++                if (r.packageName == null && (m = PROCESS.matcher(s)).matches()) r.packageName = m.group(1);
++            }
++            if ((m = EXCEPTION.matcher(s)).matches() && r.exceptions.size() < 6) {
++                String type = m.group(1);
++                if (type.length() <= 180 && (type.endsWith("Exception") || type.endsWith("Error")
++                        || type.endsWith("Throwable")) && !r.exceptions.contains(type)) r.exceptions.add(type);
++            } else if ((m = FRAME.matcher(s)).matches() && r.frames.size() < MAX_FRAMES) {
++                String frame = m.group(1) + "(" + m.group(2) + ")";
++                if (frame.length() <= 240) r.frames.add(frame);
++            } else if ((m = NATIVE.matcher(s)).matches() && r.frames.size() < MAX_FRAMES) {
++                r.frames.add(m.group(2) + "+0x" + m.group(1).toLowerCase(java.util.Locale.ROOT));
++            } else if ((m = SIGNAL.matcher(s)).matches()) {
++                r.signal = m.group(1);
++            }
++        }
++        if (systemServer) {
++            if (!systemServerHeader || (r.uid >= 0 && r.uid != 1000)) return null;
++            r.packageName = "android";
++            r.uid = 1000;
++        } else if (r.uid < 0 || r.uid / 100000 != userId || !isPackageName(r.packageName)) {
++            // Unknown ownership or another user's/work profile's record: do not collect it.
++            return null;
++        }
++        return r;
++    }
++
++    static boolean isPackageName(String value) {
++        return value != null && value.length() <= 180
++                && (value.equals("android") || value.matches(QUALIFIED));
++    }
++
++    private CrashSanitizer() { }
++}
+diff --git a/apps/ZramStatus/src/main/java/org/lineageos/zramstatus/FeedbackActivity.java b/apps/ZramStatus/src/main/java/org/lineageos/zramstatus/FeedbackActivity.java
+new file mode 100644
+--- /dev/null
++++ b/apps/ZramStatus/src/main/java/org/lineageos/zramstatus/FeedbackActivity.java
+@@ -0,0 +1,400 @@
++package org.lineageos.zramstatus;
++
++import android.Manifest;
++import android.app.Activity;
++import android.app.AlertDialog;
++import android.content.Intent;
++import android.content.pm.PackageManager;
++import android.graphics.Typeface;
++import android.content.res.ColorStateList;
++import android.widget.ImageView;
++import android.graphics.drawable.GradientDrawable;
++import android.os.Bundle;
++import android.os.UserHandle;
++import android.view.Gravity;
++import android.view.WindowInsets;
++import android.view.WindowInsetsController;
++import android.widget.Button;
++import android.widget.CheckBox;
++import android.widget.LinearLayout;
++import android.widget.ScrollView;
++import android.widget.Switch;
++import android.widget.TextView;
++import android.widget.Toast;
++
++import org.json.JSONObject;
++
++import java.util.List;
++
++/** Visible opt-in, local inbox, exact report preview, then an explicit user-mediated share. */
++public final class FeedbackActivity extends Activity {
++    private LinearLayout root;
++    private TextView homeCount;
++    private boolean previewing;
++    private long generation;
++    private boolean submitting;
++    private static final java.util.concurrent.ExecutorService UPLOAD =
++            java.util.concurrent.Executors.newSingleThreadExecutor();
++    private static final int INK = 0xff13233a;
++    private static final int MUTED = 0xff6b7a90;
++    private static final int BACKGROUND = 0xfff4f7fb;
++
++    @Override protected void onCreate(Bundle state) {
++        super.onCreate(state);
++        showHome();
++    }
++
++    @Override protected void onNewIntent(Intent intent) {
++        super.onNewIntent(intent);
++        setIntent(intent);
++        showHome();
++    }
++
++    @Override public void onBackPressed() {
++        if (previewing) showHome(); else super.onBackPressed();
++    }
++
++    private void layout(int title) {
++        generation++;
++        ScrollView scroll = new ScrollView(this);
++        scroll.setFillViewport(true);
++        scroll.setBackgroundColor(BACKGROUND);
++        root = new LinearLayout(this);
++        root.setOrientation(LinearLayout.VERTICAL);
++        scroll.addView(root);
++        setContentView(scroll);
++        getWindow().setStatusBarColor(BACKGROUND);
++        getWindow().setNavigationBarColor(BACKGROUND);
++        WindowInsetsController bars = getWindow().getInsetsController();
++        if (bars != null) bars.setSystemBarsAppearance(
++                WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
++                        | WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS,
++                WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
++                        | WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS);
++        scroll.setOnApplyWindowInsetsListener((v, insets) -> {
++            android.graphics.Insets system = insets.getInsets(WindowInsets.Type.systemBars());
++            root.setPadding(dp(16), system.top + dp(20), dp(16), system.bottom + dp(24));
++            return WindowInsets.CONSUMED;
++        });
++        LinearLayout header = new LinearLayout(this);
++        header.setGravity(Gravity.CENTER_VERTICAL);
++        ImageView back = new ImageView(this);
++        back.setImageResource(R.drawable.ic_sm_back);
++        back.setColorFilter(INK);
++        back.setPadding(dp(10), dp(10), dp(10), dp(10));
++        back.setBackground(round(0xffe6ecf4, 22));
++        back.setContentDescription(getString(R.string.feedback_back));
++        back.setOnClickListener(v -> onBackPressed());
++        header.addView(back, new LinearLayout.LayoutParams(dp(44), dp(44)));
++        TextView heading = text(getString(title), 24, INK, true);
++        LinearLayout.LayoutParams headingParams = new LinearLayout.LayoutParams(0, -2, 1);
++        headingParams.leftMargin = dp(14);
++        header.addView(heading, headingParams);
++        root.addView(header);
++    }
++
++    private void showHome() {
++        previewing = false;
++        layout(R.string.feedback_title);
++        LinearLayout hero = card();
++        hero.setPadding(dp(20), dp(18), dp(20), dp(20));
++        GradientDrawable heroBackground = new GradientDrawable(GradientDrawable.Orientation.TL_BR,
++                new int[] {0xff2f80ed, 0xff3aa0e8, 0xff36c2c9});
++        heroBackground.setCornerRadius(dp(22));
++        hero.setBackground(heroBackground);
++        hero.setElevation(dp(4));
++        homeCount = text("0", 34, 0xffffffff, true);
++        hero.addView(homeCount);
++        hero.addView(text(getString(R.string.feedback_saved_title), 15, 0xffffffff, true));
++        hero.addView(text(getString(R.string.feedback_hero_hint), 13, 0xebffffff, false));
++        LinearLayout about = card();
++        about.addView(text(getString(R.string.feedback_privacy_title), 19, INK, true));
++        about.addView(text(getString(R.string.feedback_privacy_summary), 14, MUTED, false));
++        TextView details = text(getString(R.string.feedback_data_details), 14, 0xff2f80ed, true);
++        details.setOnClickListener(v -> new AlertDialog.Builder(this)
++                .setTitle(R.string.feedback_privacy_title).setMessage(R.string.feedback_privacy_body)
++                .setPositiveButton(android.R.string.ok, null).show());
++        about.addView(details);
++        about.addView(text(getString(R.string.feedback_recipient_line,
++                getString(R.string.feedback_recipient)), 14, INK, true));
++        if (UserHandle.myUserId() != 0) {
++            about.addView(text(getString(R.string.feedback_owner_only), 15, INK, false));
++            return;
++        }
++        LinearLayout settings = card();
++        boolean supported = FeedbackStore.automaticSupported(this);
++        Switch enable = new Switch(this);
++        enable.setText("");
++        int[][] toggleStates = {{android.R.attr.state_checked}, {}};
++        enable.setThumbTintList(new ColorStateList(toggleStates, new int[] {0xff2f80ed, 0xffffffff}));
++        enable.setTrackTintList(new ColorStateList(toggleStates, new int[] {0xffa4c6f7, 0xffd3dbe6}));
++        enable.setTextColor(INK);
++        enable.setTextSize(16);
++        enable.setPadding(0, dp(8), 0, dp(8));
++        enable.setChecked(supported && FeedbackStore.enabled(this));
++        if (!supported && FeedbackStore.enabled(this))
++            FeedbackStore.IO.execute(() -> FeedbackStore.setEnabled(this, false));
++        LinearLayout toggleRow = new LinearLayout(this);
++        toggleRow.setGravity(Gravity.CENTER_VERTICAL);
++        TextView toggleLabel = text(getString(R.string.feedback_enable), 16, INK, true);
++        LinearLayout.LayoutParams toggleTextParams = new LinearLayout.LayoutParams(0, -2, 1);
++        toggleTextParams.rightMargin = dp(12);
++        toggleRow.addView(toggleLabel, toggleTextParams);
++        toggleRow.addView(enable);
++        settings.addView(toggleRow);
++        enable.setEnabled(supported);
++        settings.addView(text(getString(supported ? R.string.feedback_enable_summary
++                : R.string.feedback_update_required), 14, MUTED, false));
++        enable.setOnCheckedChangeListener((b, checked) -> {
++            if (checked) {
++                new AlertDialog.Builder(this).setTitle(R.string.feedback_enable)
++                        .setMessage(getString(R.string.feedback_enable_consent) + "\n\n"
++                                + getString(R.string.feedback_privacy_body))
++                        .setNegativeButton(android.R.string.cancel, (d, w) -> showHome())
++                        .setPositiveButton(R.string.feedback_enable_confirm, (d, w) -> {
++                            FeedbackStore.IO.execute(() -> {
++                                FeedbackStore.setEnabled(this, true);
++                                runOnUiThread(() -> {
++                                    if (isFinishing()) return;
++                                    if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
++                                            != PackageManager.PERMISSION_GRANTED)
++                                        requestPermissions(new String[] {Manifest.permission.POST_NOTIFICATIONS}, 31);
++                                    showHome();
++                                });
++                            });
++                        }).setOnCancelListener(d -> showHome()).show();
++            } else {
++                FeedbackStore.IO.execute(() -> {
++                    FeedbackStore.setEnabled(this, false);
++                    runOnUiThread(() -> { if (!isFinishing()) showHome(); });
++                });
++            }
++        });
++        root.addView(button(R.string.feedback_manual, this::manual));
++        root.addView(text(getString(R.string.feedback_saved_title), 18, INK, true));
++        TextView loading = text(getString(R.string.feedback_loading), 14, MUTED, false);
++        root.addView(loading);
++        LinearLayout inbox = new LinearLayout(this);
++        inbox.setOrientation(LinearLayout.VERTICAL);
++        root.addView(inbox);
++        root.addView(button(R.string.feedback_delete_all, () -> new AlertDialog.Builder(this)
++                .setTitle(R.string.feedback_delete_all).setMessage(R.string.feedback_delete_message)
++                .setNegativeButton(android.R.string.cancel, null)
++                .setPositiveButton(R.string.feedback_delete_confirm, (d, w) -> FeedbackStore.IO.execute(() -> {
++                    FeedbackStore.clear(this);
++                    runOnUiThread(() -> { if (!isFinishing()) showHome(); });
++                })).show()));
++        long currentGeneration = generation;
++        FeedbackStore.IO.execute(() -> {
++            try {
++                List<JSONObject> reports = FeedbackStore.list(this);
++                runOnUiThread(() -> {
++                    if (isFinishing() || isDestroyed() || currentGeneration != generation) return;
++                    homeCount.setText(Integer.toString(reports.size()));
++                    loading.setText(reports.isEmpty() ? R.string.feedback_empty : R.string.feedback_saved_summary);
++                    for (JSONObject report : reports) {
++                        Button row = new Button(this);
++                        styleButton(row, false);
++                        row.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
++                        row.setBackground(round(0xffffffff, 20));
++                        row.setBackgroundTintList(null);
++                        row.setTextColor(INK);
++                        row.setText(report.optString("time_utc_minute") + " · "
++                                + kind(report.optString("kind")) + "\n" + displayApp(report) + "  ›");
++                        row.setOnClickListener(v -> showPreview(report));
++                        inbox.addView(row, new LinearLayout.LayoutParams(-1, -2));
++                    }
++                    String wanted = getIntent().getStringExtra("report_id");
++                    if (wanted != null) {
++                        getIntent().removeExtra("report_id");
++                        for (JSONObject report : reports) if (wanted.equals(report.optString("id"))) {
++                            showPreview(report); break;
++                        }
++                    }
++                });
++            } catch (Exception e) { runOnUiThread(() -> { if (currentGeneration == generation && !isDestroyed())
++                loading.setText(R.string.feedback_unavailable); }); }
++        });
++    }
++
++    private String kind(String value) {
++        if (value.equals("anr")) return getString(R.string.feedback_kind_anr);
++        if (value.equals("native_crash")) return getString(R.string.feedback_kind_native);
++        if (value.equals("manual")) return getString(R.string.feedback_kind_manual);
++        return getString(R.string.feedback_kind_crash);
++    }
++
++    private void manual() {
++        String[] labels = getResources().getStringArray(R.array.feedback_symptoms);
++        String[] codes = {"crash", "slow", "black_screen", "playback", "other"};
++        new AlertDialog.Builder(this).setTitle(R.string.feedback_manual)
++                .setItems(labels, (d, which) -> FeedbackStore.IO.execute(() -> {
++                    try {
++                        JSONObject report = FeedbackStore.manual(this, codes[which]);
++                        runOnUiThread(() -> { if (!isFinishing()) showPreview(report); });
++                    } catch (Exception e) { runOnUiThread(() -> toast(R.string.feedback_unavailable)); }
++                })).setNegativeButton(android.R.string.cancel, null).show();
++    }
++
++    private void showPreview(JSONObject report) {
++        previewing = true;
++        layout(R.string.feedback_preview_title);
++        FeedbackReceiver.cancelNotification(this);
++        LinearLayout intro = card();
++        intro.addView(text(getString(R.string.feedback_recipient_line,
++                getString(R.string.feedback_recipient)), 16, INK, true));
++        intro.addView(text(getString(R.string.feedback_preview_summary), 14, MUTED, false));
++        TextView content = text("", 12, INK, false);
++        content.setTypeface(Typeface.MONOSPACE);
++        content.setTextIsSelectable(true);
++        try { content.setText(FeedbackStore.preview(report, getString(R.string.feedback_recipient))); }
++        catch (Exception e) { content.setText(R.string.feedback_unavailable); }
++        card().addView(content);
++        CheckBox consent = new CheckBox(this);
++        consent.setText(getString(R.string.feedback_share_consent, getString(R.string.feedback_recipient)));
++        consent.setTextColor(INK);
++        consent.setTextSize(14);
++        consent.setButtonTintList(ColorStateList.valueOf(0xff2f80ed));
++        consent.setPadding(0, dp(12), 0, dp(12));
++        consent.setChecked(false);
++        root.addView(consent);
++        Button share = button(R.string.feedback_share, () -> { });
++        styleButton(share, true);
++        String endpoint = getString(R.string.feedback_endpoint);
++        boolean configured = !endpoint.isEmpty() && FeedbackProvider.uploadToken().length() >= 32;
++        if (!configured) root.addView(text(getString(R.string.feedback_submission_unavailable), 14, MUTED, false));
++        share.setEnabled(false);
++        consent.setOnCheckedChangeListener((b, checked) -> share.setEnabled(checked && configured && !submitting));
++        share.setOnClickListener(v -> {
++            if (!consent.isChecked() || !configured || submitting) return;
++            submitting = true;
++            share.setEnabled(false);
++            share.setText(R.string.feedback_submitting);
++            UPLOAD.execute(() -> {
++                boolean success = false;
++                try {
++                    Submission.send(endpoint, FeedbackStore.submissionPayload(report));
++                    success = true;
++                } catch (Exception ignored) { /* Never log payloads, addresses or exception messages. */ }
++                boolean submitted = success;
++                runOnUiThread(() -> {
++                    submitting = false;
++                    if (isFinishing() || isDestroyed()) return;
++                    if (submitted) {
++                        share.setText(R.string.feedback_submitted);
++                        share.setEnabled(false);
++                        toast(R.string.feedback_submission_success);
++                    } else {
++                        share.setText(R.string.feedback_share);
++                        share.setEnabled(consent.isChecked() && configured);
++                        toast(R.string.feedback_submission_failed);
++                    }
++                });
++            });
++        });
++        root.addView(share);
++        root.addView(button(R.string.feedback_return, this::showHome));
++    }
++
++    /** Only this explicit user action has a network path; collection and notices never call it. */
++    static final class Submission {
++        static void send(String endpoint, JSONObject report) throws Exception {
++            java.net.URI uri = new java.net.URI(endpoint);
++            if (!"https".equalsIgnoreCase(uri.getScheme()) || uri.getHost() == null
++                    || uri.getRawUserInfo() != null || uri.getRawQuery() != null || uri.getRawFragment() != null)
++                throw new java.io.IOException("Invalid receiving endpoint");
++            byte[] body = report.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
++            if (body.length > FeedbackStore.MAX_REPORT_BYTES) throw new java.io.IOException("Report too large");
++            javax.net.ssl.HttpsURLConnection c = (javax.net.ssl.HttpsURLConnection) uri.toURL().openConnection();
++            try {
++                c.setInstanceFollowRedirects(false);
++                c.setConnectTimeout(15000); c.setReadTimeout(15000);
++                c.setUseCaches(false); c.setRequestMethod("POST"); c.setDoOutput(true);
++                c.setRequestProperty("Content-Type", "application/json; charset=utf-8");
++                c.setRequestProperty("Accept", "application/json");
++                c.setRequestProperty("Authorization", "Bearer " + FeedbackProvider.uploadToken());
++                c.setRequestProperty("User-Agent", "XZ1C-Feedback/1");
++                c.setFixedLengthStreamingMode(body.length);
++                try (java.io.OutputStream out = c.getOutputStream()) { out.write(body); }
++                if (c.getResponseCode() != 201) throw new java.io.IOException("Submission rejected");
++                java.io.ByteArrayOutputStream buffer = new java.io.ByteArrayOutputStream();
++                try (java.io.InputStream in = c.getInputStream()) {
++                    byte[] block = new byte[512]; int n;
++                    while ((n = in.read(block)) != -1) {
++                        if (buffer.size() + n > 4096) throw new java.io.IOException("Invalid acknowledgement");
++                        buffer.write(block, 0, n);
++                    }
++                }
++                JSONObject response = new JSONObject(buffer.toString("UTF-8"));
++                if (!report.getString("incident_id").equals(response.optString("report_id")))
++                    throw new java.io.IOException("Invalid acknowledgement");
++            } finally { c.disconnect(); }
++        }
++    }
++
++    private LinearLayout card() {
++        LinearLayout c = new LinearLayout(this);
++        c.setOrientation(LinearLayout.VERTICAL);
++        c.setPadding(dp(18), dp(12), dp(18), dp(12));
++        GradientDrawable bg = new GradientDrawable();
++        bg.setColor(0xffffffff);
++        bg.setCornerRadius(dp(22));
++        c.setBackground(bg);
++        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, -2);
++        params.topMargin = dp(14);
++        params.bottomMargin = dp(10);
++        root.addView(c, params);
++        return c;
++    }
++
++    private TextView text(String text, int size, int color, boolean bold) {
++        TextView t = new TextView(this);
++        t.setText(text); t.setTextSize(size); t.setTextColor(color);
++        t.setPadding(0, dp(6), 0, dp(6));
++        if (bold) t.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
++        return t;
++    }
++
++    private Button button(int label, Runnable action) {
++        Button b = new Button(this);
++        b.setText(label);
++        styleButton(b, false);
++        b.setOnClickListener(v -> action.run());
++        return b;
++    }
++
++    private void styleButton(Button b, boolean primary) {
++        b.setAllCaps(false);
++        b.setTextSize(15);
++        b.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
++        b.setPadding(dp(16), dp(12), dp(16), dp(12));
++        b.setMinHeight(dp(48));
++        b.setStateListAnimator(null);
++        b.setElevation(0);
++        b.setBackground(round(primary ? 0xff2f80ed : 0xffe8f0fc, 16));
++        int[][] states = {{android.R.attr.state_enabled}, {}};
++        b.setBackgroundTintList(new ColorStateList(states,
++                new int[] {primary ? 0xff2f80ed : 0xffe8f0fc, 0xffe9edf3}));
++        b.setTextColor(new ColorStateList(states,
++                new int[] {primary ? 0xffffffff : 0xff2f6fd6, 0xff8b99ab}));
++        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
++        lp.topMargin = dp(10); lp.bottomMargin = dp(4);
++        b.setLayoutParams(lp);
++    }
++
++    private GradientDrawable round(int color, int radius) {
++        GradientDrawable d = new GradientDrawable();
++        d.setColor(color); d.setCornerRadius(dp(radius));
++        return d;
++    }
++
++    private String displayApp(JSONObject report) {
++        String name = report.optString("package");
++        if (name.isEmpty()) return getString(R.string.feedback_kind_manual);
++        try { return getPackageManager().getApplicationLabel(
++                getPackageManager().getApplicationInfo(name, 0)).toString(); }
++        catch (PackageManager.NameNotFoundException ignored) { return name; }
++    }
++    private int dp(int value) { return Math.round(value * getResources().getDisplayMetrics().density); }
++    private void toast(int message) { if (!isFinishing()) Toast.makeText(this, message, Toast.LENGTH_LONG).show(); }
++}
+diff --git a/apps/ZramStatus/src/main/java/org/lineageos/zramstatus/FeedbackProvider.java.example b/apps/ZramStatus/src/main/java/org/lineageos/zramstatus/FeedbackProvider.java.example
+new file mode 100644
+--- /dev/null
++++ b/apps/ZramStatus/src/main/java/org/lineageos/zramstatus/FeedbackProvider.java.example
+@@ -0,0 +1,7 @@
++package org.lineageos.zramstatus;
++
++/** Example only. Use tools/provision-feedback.py to generate the ignored .java file. */
++final class FeedbackProvider {
++    private FeedbackProvider() { }
++    static String uploadToken() { return ""; }
++}
+diff --git a/apps/ZramStatus/src/main/java/org/lineageos/zramstatus/FeedbackReceiver.java b/apps/ZramStatus/src/main/java/org/lineageos/zramstatus/FeedbackReceiver.java
+new file mode 100644
+--- /dev/null
++++ b/apps/ZramStatus/src/main/java/org/lineageos/zramstatus/FeedbackReceiver.java
+@@ -0,0 +1,81 @@
++package org.lineageos.zramstatus;
++
++import android.Manifest;
++import android.app.Notification;
++import android.app.NotificationChannel;
++import android.app.NotificationManager;
++import android.app.PendingIntent;
++import android.content.BroadcastReceiver;
++import android.content.Context;
++import android.content.Intent;
++import android.content.pm.PackageManager;
++import android.os.DropBoxManager;
++
++/** Event-driven only: no permanent service, polling loop, foreground overlay or upload. */
++public final class FeedbackReceiver extends BroadcastReceiver {
++    private static final java.util.concurrent.atomic.AtomicInteger QUEUED =
++            new java.util.concurrent.atomic.AtomicInteger();
++    private static final String CHANNEL = "system_feedback_issues";
++    private static final int NOTICE_ID = 0x465442;
++
++    @Override public void onReceive(Context context, Intent intent) {
++        if (intent == null || !FeedbackStore.enabled(context)) return;
++        String action = intent.getAction();
++        boolean boot = Intent.ACTION_BOOT_COMPLETED.equals(action);
++        if (!boot && !DropBoxManager.ACTION_DROPBOX_ENTRY_ADDED.equals(action)) return;
++        String tag = intent.getStringExtra(DropBoxManager.EXTRA_TAG);
++        long time = intent.getLongExtra(DropBoxManager.EXTRA_TIME, -1);
++        if (!boot && (!CrashSanitizer.TAGS.contains(tag) || time < 0)) return;
++        if (QUEUED.incrementAndGet() > 4) { QUEUED.decrementAndGet(); return; }
++        PendingResult pending = goAsync();
++        FeedbackStore.IO.execute(() -> {
++            try {
++                if (boot) FeedbackStore.catchUp(context);
++                else FeedbackStore.collect(context, tag, time);
++            } finally { QUEUED.decrementAndGet(); pending.finish(); }
++        });
++    }
++
++    static void notifyIfAllowed(Context c, String id) {
++        if (!FeedbackStore.enabled(c)
++                || c.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
++                != PackageManager.PERMISSION_GRANTED) return;
++        NotificationManager manager = c.getSystemService(NotificationManager.class);
++        if (manager == null || !manager.areNotificationsEnabled()) return;
++        long now = System.currentTimeMillis();
++        if (now - FeedbackStore.prefs(c).getLong("last_notice", 0) < FeedbackStore.DAY) return;
++        NotificationChannel channel = new NotificationChannel(CHANNEL,
++                c.getString(R.string.feedback_notification_channel), NotificationManager.IMPORTANCE_LOW);
++        channel.setDescription(c.getString(R.string.feedback_notification_description));
++        channel.setSound(null, null);
++        channel.enableVibration(false);
++        channel.setShowBadge(false);
++        channel.setLockscreenVisibility(Notification.VISIBILITY_SECRET);
++        manager.createNotificationChannel(channel);
++        PendingIntent open = PendingIntent.getActivity(c, NOTICE_ID,
++                new Intent(c, FeedbackActivity.class).putExtra("report_id", id)
++                        .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP),
++                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
++        Notification notice = new Notification.Builder(c, CHANNEL)
++                .setSmallIcon(R.drawable.ic_sm_feedback)
++                .setContentTitle(c.getString(R.string.feedback_notice_title))
++                .setContentText(c.getString(R.string.feedback_notice_body))
++                .setStyle(new Notification.BigTextStyle().bigText(c.getString(R.string.feedback_notice_body)))
++                .setContentIntent(open)
++                .setVisibility(Notification.VISIBILITY_SECRET)
++                .setOnlyAlertOnce(true)
++                .setAutoCancel(true)
++                .addAction(new Notification.Action.Builder(null,
++                        c.getString(R.string.feedback_view_report), open).build())
++                .build();
++        try {
++            manager.notify(NOTICE_ID, notice);
++            FeedbackStore.prefs(c).edit().putLong("last_notice", now).apply();
++        } catch (RuntimeException ignored) { }
++    }
++
++    static void cancelNotification(Context c) {
++        NotificationManager n = c.getSystemService(NotificationManager.class);
++        if (n != null) n.cancel(NOTICE_ID);
++    }
++}
+diff --git a/apps/ZramStatus/src/main/java/org/lineageos/zramstatus/FeedbackStore.java b/apps/ZramStatus/src/main/java/org/lineageos/zramstatus/FeedbackStore.java
+new file mode 100644
+--- /dev/null
++++ b/apps/ZramStatus/src/main/java/org/lineageos/zramstatus/FeedbackStore.java
+@@ -0,0 +1,251 @@
++package org.lineageos.zramstatus;
++
++import android.content.Context;
++import android.content.SharedPreferences;
++import android.content.pm.ApplicationInfo;
++import android.content.pm.PackageInfo;
++import android.os.Build;
++import android.os.DropBoxManager;
++import android.os.UserHandle;
++import android.util.AtomicFile;
++
++import org.json.JSONArray;
++import org.json.JSONObject;
++
++import java.io.File;
++import java.io.FileOutputStream;
++import java.nio.charset.StandardCharsets;
++import java.nio.file.Files;
++import java.security.MessageDigest;
++import java.text.SimpleDateFormat;
++import java.util.ArrayList;
++import java.util.Comparator;
++import java.util.Date;
++import java.util.List;
++import java.util.Locale;
++import java.util.TimeZone;
++import java.util.UUID;
++import java.util.concurrent.ExecutorService;
++import java.util.concurrent.Executors;
++
++/** Stores sanitized reports only. No logcat, full bugreport, network upload or device identifiers. */
++final class FeedbackStore {
++    static final ExecutorService IO = Executors.newSingleThreadExecutor();
++    static final long DAY = 24L * 60 * 60 * 1000;
++    static final int MAX_REPORTS = 20;
++    static final int MAX_REPORT_BYTES = 24576;
++    private static final Object LOCK = new Object();
++    private static final String PREFS = "system_feedback";
++
++    static SharedPreferences prefs(Context c) { return c.getSharedPreferences(PREFS, Context.MODE_PRIVATE); }
++    static boolean enabled(Context c) { return prefs(c).getBoolean("enabled", false); }
++
++    static boolean automaticSupported(Context c) {
++        return new File("/system/etc/sysconfig/xz1c-bug-feedback.xml").isFile()
++                && c.checkSelfPermission("android.permission.READ_DROPBOX_DATA")
++                == android.content.pm.PackageManager.PERMISSION_GRANTED;
++    }
++
++    static void setEnabled(Context c, boolean enabled) {
++        synchronized (LOCK) {
++            SharedPreferences.Editor e = prefs(c).edit().putBoolean("enabled", enabled);
++            if (enabled) e.putLong("enabled_since", System.currentTimeMillis())
++                    .putLong("last_seen", System.currentTimeMillis()).putLong("last_notice", 0);
++            e.commit();
++            c.getPackageManager().setComponentEnabledSetting(
++                    new android.content.ComponentName(c, FeedbackReceiver.class),
++                    enabled ? android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_ENABLED
++                            : android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
++                    android.content.pm.PackageManager.DONT_KILL_APP);
++            if (!enabled) FeedbackReceiver.cancelNotification(c);
++        }
++    }
++
++    private static File directory(Context c, String name) throws Exception {
++        File f = new File(c.getFilesDir(), name);
++        if (!f.isDirectory() && !f.mkdirs()) throw new java.io.IOException("Storage unavailable");
++        return f;
++    }
++
++    static void collect(Context c, String tag, long eventTime) {
++        if (!enabled(c) || UserHandle.myUserId() != 0 || !CrashSanitizer.TAGS.contains(tag)) return;
++        long now = System.currentTimeMillis();
++        if (eventTime < prefs(c).getLong("enabled_since", now) || eventTime > now + 60000) return;
++        try {
++            DropBoxManager manager = c.getSystemService(DropBoxManager.class);
++            if (manager == null) return;
++            try (DropBoxManager.Entry entry = manager.getNextEntry(tag, eventTime - 1)) {
++                if (entry == null || entry.getTimeMillis() != eventTime) {
++                    return;
++                }
++                CrashSanitizer.Result result = CrashSanitizer.parse(tag,
++                        entry.getText(CrashSanitizer.MAX_INPUT), UserHandle.myUserId());
++                if (result == null) {
++                    return;
++                }
++                ApplicationInfo app = c.getPackageManager().getApplicationInfo(result.packageName, 0);
++                if (app.uid != result.uid) {
++                    return;
++                }
++                PackageInfo pkg = c.getPackageManager().getPackageInfo(result.packageName, 0);
++                JSONObject report = base(result.kind, eventTime);
++                report.put("package", result.packageName);
++                report.put("app_version_code", pkg.getLongVersionCode());
++                report.put("exception_types", new JSONArray(result.exceptions));
++                report.put("code_frames", new JSONArray(result.frames));
++                if (!result.signal.isEmpty()) report.put("signal", result.signal);
++                synchronized (LOCK) {
++                    if (!enabled(c)) return;
++                    String signature = result.packageName + "|" + result.kind + "|"
++                            + result.exceptions + "|" + result.frames + "|" + result.signal;
++                    String key = digest(signature) + ":" + (eventTime / DAY);
++                    for (JSONObject previous : listLocked(c)) {
++                        if (key.equals(previous.optString("local_dedup_key"))) return;
++                    }
++                    report.put("local_dedup_key", key);
++                    saveLocked(c, report);
++                    prefs(c).edit().putLong("last_seen", Math.max(eventTime,
++                            prefs(c).getLong("last_seen", 0))).apply();
++                    FeedbackReceiver.notifyIfAllowed(c, report.getString("id"));
++                }
++            }
++        } catch (Exception ignored) {
++            // Never persist or log the exception message: it may itself contain private text.
++        }
++    }
++
++    static void catchUp(Context c) {
++        if (!enabled(c) || UserHandle.myUserId() != 0) return;
++        try {
++            DropBoxManager manager = c.getSystemService(DropBoxManager.class);
++            long after = Math.max(prefs(c).getLong("last_seen", 0),
++                    Math.max(prefs(c).getLong("enabled_since", System.currentTimeMillis()),
++                            System.currentTimeMillis() - DAY));
++            int budget = 12;
++            for (String tag : CrashSanitizer.TAGS) {
++                long cursor = after;
++                while (budget > 0) {
++                    long t;
++                    try (DropBoxManager.Entry entry = manager.getNextEntry(tag, cursor)) {
++                        if (entry == null) break;
++                        t = entry.getTimeMillis();
++                    }
++                    cursor = t;
++                    budget--;
++                    collect(c, tag, t);
++                }
++            }
++        } catch (Exception ignored) { }
++    }
++
++    static JSONObject manual(Context c, String symptom) throws Exception {
++        if (UserHandle.myUserId() != 0) throw new SecurityException();
++        if (!java.util.Arrays.asList("crash", "slow", "black_screen", "playback", "other").contains(symptom))
++            throw new IllegalArgumentException();
++        JSONObject r = base("manual", System.currentTimeMillis());
++        r.put("symptom", symptom);
++        synchronized (LOCK) { saveLocked(c, r); }
++        return r;
++    }
++
++    private static JSONObject base(String kind, long time) throws Exception {
++        SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm'Z'", Locale.US);
++        df.setTimeZone(TimeZone.getTimeZone("UTC"));
++        JSONObject r = new JSONObject();
++        r.put("schema", 1);
++        r.put("id", UUID.randomUUID().toString()); // Incident identifier, not a device identifier.
++        r.put("time_utc_minute", df.format(new Date(time)));
++        r.put("kind", kind);
++        r.put("device", "Sony Xperia XZ1 Compact / SO-02K");
++        r.put("android_sdk", Build.VERSION.SDK_INT);
++        r.put("system_build", safeBuild(Build.VERSION.INCREMENTAL));
++        r.put("security_patch", Build.VERSION.SECURITY_PATCH.matches("[0-9]{4}-[0-9]{2}-[0-9]{2}")
++                ? Build.VERSION.SECURITY_PATCH : "unknown");
++        return r;
++    }
++
++    static String safeBuild(String value) {
++        return value != null && value.matches("[0-9]{1,20}") ? value : "unknown";
++    }
++
++    private static String digest(String input) throws Exception {
++        StringBuilder s = new StringBuilder();
++        for (byte b : MessageDigest.getInstance("SHA-256").digest(input.getBytes(StandardCharsets.UTF_8)))
++            s.append(String.format(Locale.US, "%02x", b & 255));
++        return s.toString();
++    }
++
++    static List<JSONObject> list(Context c) throws Exception {
++        synchronized (LOCK) { pruneLocked(c); return listLocked(c); }
++    }
++
++    private static List<JSONObject> listLocked(Context c) throws Exception {
++        List<JSONObject> result = new ArrayList<>();
++        File[] files = directory(c, "feedback_reports").listFiles();
++        if (files == null) return result;
++        java.util.Arrays.sort(files, Comparator.comparingLong(File::lastModified).reversed());
++        for (File file : files) {
++            if (!file.getName().matches("[0-9a-f-]{36}\\.json") || file.length() > MAX_REPORT_BYTES) continue;
++            try { result.add(new JSONObject(new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8))); }
++            catch (Exception ignored) { }
++            if (result.size() >= MAX_REPORTS) break;
++        }
++        return result;
++    }
++
++    private static void saveLocked(Context c, JSONObject report) throws Exception {
++        byte[] data = report.toString(2).getBytes(StandardCharsets.UTF_8);
++        if (data.length > MAX_REPORT_BYTES) throw new java.io.IOException("Report too large");
++        AtomicFile f = new AtomicFile(new File(directory(c, "feedback_reports"), report.getString("id") + ".json"));
++        FileOutputStream stream = null;
++        try { stream = f.startWrite(); stream.write(data); f.finishWrite(stream); }
++        catch (Exception e) { if (stream != null) f.failWrite(stream); throw e; }
++        pruneLocked(c);
++    }
++
++    private static void pruneLocked(Context c) throws Exception {
++        File[] files = directory(c, "feedback_reports").listFiles();
++        if (files != null) {
++            java.util.Arrays.sort(files, Comparator.comparingLong(File::lastModified).reversed());
++            for (int i = 0; i < files.length; i++) {
++                if (i >= MAX_REPORTS || files[i].lastModified() < System.currentTimeMillis() - 7 * DAY)
++                    files[i].delete();
++            }
++        }
++    }
++
++    static JSONObject submissionPayload(JSONObject r) throws Exception {
++        JSONObject payload = new JSONObject();
++        payload.put("schema", 1);
++        String id = r.optString("id");
++        if (!id.matches("[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"))
++            throw new java.io.IOException("Invalid incident");
++        payload.put("incident_id", id); // Random per incident, never a stable phone identifier.
++        for (String key : new String[] {"time_utc_minute", "kind", "symptom", "device", "android_sdk",
++                "system_build", "security_patch", "package", "app_version_code", "signal",
++                "exception_types", "code_frames"}) {
++            if (r.has(key)) payload.put(key, r.get(key));
++        }
++        return payload;
++    }
++
++    static String preview(JSONObject r, String recipient) throws Exception {
++        return "XZ1C Bug report / Bug 报告\nRecipient / 接收方: " + recipient
++                + "\n\n" + submissionPayload(r).toString(2) + "\n";
++    }
++
++    static void clear(Context c) {
++        synchronized (LOCK) {
++            for (String name : new String[] {"feedback_reports"}) {
++                File[] files = new File(c.getFilesDir(), name).listFiles();
++                if (files != null) for (File f : files) f.delete();
++            }
++            prefs(c).edit().remove("collector_status").remove("last_broadcast_received")
++                    .putLong("last_seen", System.currentTimeMillis())
++                    .putLong("enabled_since", System.currentTimeMillis()).apply();
++            FeedbackReceiver.cancelNotification(c);
++        }
++    }
++
++    private FeedbackStore() { }
++}
+diff --git a/apps/ZramStatus/src/main/java/org/lineageos/zramstatus/ZramStatusActivity.java b/apps/ZramStatus/src/main/java/org/lineageos/zramstatus/ZramStatusActivity.java
+--- a/apps/ZramStatus/src/main/java/org/lineageos/zramstatus/ZramStatusActivity.java
++++ b/apps/ZramStatus/src/main/java/org/lineageos/zramstatus/ZramStatusActivity.java
+@@ -211,6 +211,9 @@
+         addAction(grid, R.drawable.ic_sm_battery, R.string.battery, 0xff22b3a6, blend(0xffffffff, 0xff22b3a6, 0.13f),
+                 () -> openFeature(FeatureActivity.PAGE_BATTERY));
+         // NAS (network storage) is switched off; the page and NasScanJob stay in the code.
++        addAction(grid, R.drawable.ic_sm_feedback, R.string.feedback_title, 0xff2f80ed,
++                blend(0xffffffff, 0xff2f80ed, 0.13f),
++                () -> startActivity(new Intent(this, FeedbackActivity.class)));
+         // addAction(grid, R.drawable.ic_sm_nas, R.string.nas, 0xff0ea5e9, 0xffd6f0fb,
+         //         () -> openFeature(FeatureActivity.PAGE_NAS));
+     }
+diff --git a/apps/ZramStatus/src/main/res/drawable/ic_sm_feedback.xml b/apps/ZramStatus/src/main/res/drawable/ic_sm_feedback.xml
+new file mode 100644
+--- /dev/null
++++ b/apps/ZramStatus/src/main/res/drawable/ic_sm_feedback.xml
+@@ -0,0 +1,3 @@
++<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
++    <path android:fillColor="#00000000" android:strokeColor="#000000" android:strokeWidth="2" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M8,10Q8,6 12,6Q16,6 16,10V15Q16,19 12,19Q8,19 8,15Z M12,7V18 M10,6L8,3 M14,6L16,3 M8,10L4,8 M8,13H3 M8,16L4,18 M16,10L20,8 M16,13H21 M16,16L20,18" />
++</vector>
+diff --git a/apps/ZramStatus/src/main/res/values/strings.xml b/apps/ZramStatus/src/main/res/values/strings.xml
+--- a/apps/ZramStatus/src/main/res/values/strings.xml
++++ b/apps/ZramStatus/src/main/res/values/strings.xml
+@@ -348,4 +348,60 @@
+     <string name="battery_scanning_hint">Reading battery history and power consumption</string>
+     <string name="running_scanning_title">Loading running apps…</string>
+     <string name="running_scanning_hint">Retrieving active foreground and background processes</string>
++
++    <!-- Explicitly opted-in, local-only technical problem reports. -->
++    <string name="feedback_title">Bug reports</string>
++    <string name="feedback_privacy_title">You decide what to share</string>
++    <string name="feedback_privacy_body">Off by default. Saves only the app package and version, system version, minute of the incident, error type and code locations. No original error messages, full logs, screenshots, messages, photos, accounts, location or device identifiers. A random incident number identifies this report only. Up to 20 local reports are valid for 7 days; expired files are cleaned the next time this feature runs. Nothing is uploaded until you review and explicitly submit a report. Received reports are kept by the maintainer for up to 30 days.</string>
++    <string name="feedback_recipient">Yal3AY</string>
++    <string name="feedback_recipient_line">Intended recipient: %1$s</string>
++    <string name="feedback_owner_only">Available only to the phone owner. Work profiles and other users are excluded.</string>
++    <string name="feedback_enable">Save crash reports and remind me</string>
++    <string name="feedback_enable_summary">Silent notification at most once every 24 hours. No popup, sound or vibration. You may ignore it.</string>
++    <string name="feedback_enable_consent">Allow local collection of the limited technical fields listed above? Nothing is sent automatically. You can turn this off and delete saved reports at any time.</string>
++    <string name="feedback_enable_confirm">Enable locally</string>
++    <string name="feedback_manual">Report a Bug manually</string>
++    <string name="feedback_saved_title">Saved on this phone</string>
++    <string name="feedback_loading">Loading…</string>
++    <string name="feedback_delete_all">Delete saved reports</string>
++    <string name="feedback_delete_message">Delete all reports saved by this feature on this phone? Reports already received by the maintainer must be deleted by the maintainer.</string>
++    <string name="feedback_delete_confirm">Delete</string>
++    <string name="feedback_empty">No saved reports</string>
++    <string name="feedback_saved_summary">Tap a report to review it. Nothing has been sent.</string>
++    <string name="feedback_unavailable">Unable to access the report</string>
++    <string name="feedback_kind_anr">App not responding</string>
++    <string name="feedback_kind_native">Native crash</string>
++    <string name="feedback_kind_manual">Manual report</string>
++    <string name="feedback_kind_crash">Crash</string>
++    <string name="feedback_preview_title">Review Bug report</string>
++    <string name="feedback_preview_summary">The technical content below is the complete content submitted to the maintainer. No account or device identifier is attached. Submission requires your confirmation.</string>
++    <string name="feedback_share_consent">I have reviewed this report and want to share it with %1$s.</string>
++    <string name="feedback_share">Submit to maintainer</string>
++    <string name="feedback_share_destination">Choose an app, then select %1$s as the recipient yourself. No recipient is selected automatically. The app you choose may attach your account identity or retain a copy.</string>
++    <string name="feedback_choose_app">Choose an app</string>
++    <string name="feedback_return">Back to reports</string>
++    <string name="feedback_no_share_app">No compatible sharing app is available</string>
++    <string name="feedback_back">‹ Back</string>
++    <string name="feedback_notification_channel">Bug report reminders</string>
++    <string name="feedback_notification_description">Silent reminders for locally saved reports; nothing is uploaded.</string>
++    <string name="feedback_notice_title">A Bug report is available</string>
++    <string name="feedback_notice_body">Review the technical report and choose whether to share it with the system maintainer. Nothing has been sent.</string>
++    <string name="feedback_view_report">Review report</string>
++    <string-array name="feedback_symptoms">
++        <item>Crash</item>
++        <item>Slow or unresponsive</item>
++        <item>Black screen</item>
++        <item>Playback problem</item>
++        <item>Other</item>
++    </string-array>
++    <string name="feedback_submission_unavailable">This report is saved on your phone. Submission is not available yet; please wait for an update from the maintainer.</string>
++    <string name="feedback_submitting">Submitting…</string>
++    <string name="feedback_submitted">Submitted</string>
++    <string name="feedback_submission_success">The maintainer has received this report.</string>
++    <string name="feedback_submission_failed">Submission was not confirmed. The report remains on your phone. You can choose to try again; nothing is retried automatically.</string>
++    <string name="feedback_endpoint" translatable="false">https://getnearbo.com/crash/api/reports</string>
++    <string name="feedback_hero_hint">Saved locally. You choose what to submit.</string>
++    <string name="feedback_privacy_summary">Only error types, code locations and versions. No account, messages, photos or device identifiers. You confirm every submission.</string>
++    <string name="feedback_data_details">View data and retention details</string>
++    <string name="feedback_update_required">Automatic collection needs the full system update from the maintainer. You can still create and submit a manual Bug report.</string>
+ </resources>
+diff --git a/apps/ZramStatus/src/main/res/values-zh-rCN/strings.xml b/apps/ZramStatus/src/main/res/values-zh-rCN/strings.xml
+--- a/apps/ZramStatus/src/main/res/values-zh-rCN/strings.xml
++++ b/apps/ZramStatus/src/main/res/values-zh-rCN/strings.xml
+@@ -347,4 +347,59 @@
+     <string name="battery_scanning_hint">正在读取历史耗电与各应用功耗数据</string>
+     <string name="running_scanning_title">正在获取运行中应用…</string>
+     <string name="running_scanning_hint">正在检索活跃前后台进程</string>
++
++    <!-- Explicitly opted-in, local-only technical problem reports. -->
++    <string name="feedback_title">Bug 反馈</string>
++    <string name="feedback_privacy_title">由你决定是否发送</string>
++    <string name="feedback_privacy_body">默认关闭。只保存应用包名与版本、系统版本、发生时间（精确到分钟）、错误类型和代码位置。不保存原始错误消息、完整日志、截图、聊天、照片、账号、位置或设备标识。随机报告编号只用于区分本次问题，不标识手机。本机最多20份、有效期7天，过期文件在下次使用本功能时清理。只有你查看内容并确认提交，才会发送给维护者。后台收到的报告最多保留30天。</string>
++    <string name="feedback_recipient">Yal3AY</string>
++    <string name="feedback_recipient_line">预期接收方：%1$s</string>
++    <string name="feedback_owner_only">仅限手机主用户使用，不收集工作资料和其他用户的记录。</string>
++    <string name="feedback_enable">保存崩溃报告并提醒我</string>
++    <string name="feedback_enable_summary">最多每24小时一条静默通知，不弹窗、不响铃、不振动，可以忽略。</string>
++    <string name="feedback_enable_consent">是否允许在本机保存上述有限的技术信息？不会自动发送。你随时可以关闭，并删除已保存的报告。</string>
++    <string name="feedback_enable_confirm">开启本机记录</string>
++    <string name="feedback_manual">手动反馈 Bug</string>
++    <string name="feedback_saved_title">本机已保存</string>
++    <string name="feedback_loading">正在读取…</string>
++    <string name="feedback_delete_all">删除已保存报告</string>
++    <string name="feedback_delete_message">删除本功能保存在本机的所有报告？已提交到维护者后台的报告，需由维护者在后台删除。</string>
++    <string name="feedback_delete_confirm">删除</string>
++    <string name="feedback_empty">暂无报告</string>
++    <string name="feedback_saved_summary">点击报告查看内容，尚未发送任何信息。</string>
++    <string name="feedback_unavailable">暂时无法读取报告</string>
++    <string name="feedback_kind_anr">应用无响应</string>
++    <string name="feedback_kind_native">底层程序崩溃</string>
++    <string name="feedback_kind_manual">手动反馈</string>
++    <string name="feedback_kind_crash">崩溃</string>
++    <string name="feedback_preview_title">查看 Bug 报告</string>
++    <string name="feedback_preview_summary">下方技术内容就是将提交给维护者的完整内容，不附带账号或设备标识。只有你确认后才会发送。</string>
++    <string name="feedback_share_consent">我已查看这份报告，并愿意分享给%1$s。</string>
++    <string name="feedback_share">提交给维护者</string>
++    <string name="feedback_share_destination">请选择应用，再自行选择%1$s作为接收方。系统不会自动选人。你选择的应用可能附带你的账号身份或保存一份副本。</string>
++    <string name="feedback_choose_app">选择应用</string>
++    <string name="feedback_return">返回报告列表</string>
++    <string name="feedback_no_share_app">没有可用的分享应用</string>
++    <string name="feedback_back">‹ 返回</string>
++    <string name="feedback_notification_channel">Bug 反馈提醒</string>
++    <string name="feedback_notification_description">本机报告的静默提醒，不会上传信息。</string>
++    <string name="feedback_notice_title">有一份 Bug 报告可查看</string>
++    <string name="feedback_notice_body">查看技术报告，自行决定是否分享给系统维护者。尚未发送任何信息。</string>
++    <string name="feedback_view_report">查看报告</string>
++    <string-array name="feedback_symptoms">
++        <item>崩溃</item>
++        <item>卡顿或无响应</item>
++        <item>黑屏</item>
++        <item>播放异常</item>
++        <item>其他</item>
++    </string-array>
++    <string name="feedback_submission_unavailable">报告已保存在本机，暂时无法提交，请等待维护者更新。</string>
++    <string name="feedback_submitting">正在提交…</string>
++    <string name="feedback_submitted">已提交</string>
++    <string name="feedback_submission_success">维护者已收到这份报告。</string>
++    <string name="feedback_submission_failed">未确认提交成功，报告仍保留在本机。你可以自行重试，系统不会自动重传。</string>
++    <string name="feedback_hero_hint">先保存在本机，由你确认后提交。</string>
++    <string name="feedback_privacy_summary">只含错误类型、代码位置和版本等技术信息。不含账号、聊天、照片或设备标识，每次提交都由你确认。</string>
++    <string name="feedback_data_details">查看数据范围和保留规则</string>
++    <string name="feedback_update_required">自动收集需要维护者提供的完整系统更新。你仍可手动创建并提交 Bug 报告。</string>
+ </resources>
+diff --git a/apps/ZramStatus/src/main/res/values-zh-rTW/strings.xml b/apps/ZramStatus/src/main/res/values-zh-rTW/strings.xml
+--- a/apps/ZramStatus/src/main/res/values-zh-rTW/strings.xml
++++ b/apps/ZramStatus/src/main/res/values-zh-rTW/strings.xml
+@@ -347,4 +347,59 @@
+     <string name="battery_scanning_hint">正在讀取歷史耗電與各應用功耗資料</string>
+     <string name="running_scanning_title">正在獲取運行中應用…</string>
+     <string name="running_scanning_hint">正在檢索活躍前背景行程</string>
++
++    <!-- Explicitly opted-in, local-only technical problem reports. -->
++    <string name="feedback_title">Bug 回報</string>
++    <string name="feedback_privacy_title">由你決定是否傳送</string>
++    <string name="feedback_privacy_body">預設關閉。只儲存應用程式套件名稱與版本、系統版本、發生時間（精確到分鐘）、錯誤類型和程式碼位置。不儲存原始錯誤訊息、完整記錄、截圖、聊天、照片、帳號、位置或裝置識別資料。隨機報告編號只用來區分本次問題，不識別手機。本機最多20份、有效期7天，過期檔案會在下次使用本功能時清理。只有你查看內容並確認提交，才會傳送給維護者。後台收到的報告最多保留30天。</string>
++    <string name="feedback_recipient">Yal3AY</string>
++    <string name="feedback_recipient_line">預期接收方：%1$s</string>
++    <string name="feedback_owner_only">僅限手機擁有者使用，不收集工作資料和其他使用者的記錄。</string>
++    <string name="feedback_enable">儲存當機報告並提醒我</string>
++    <string name="feedback_enable_summary">最多每24小時一則靜音通知，不彈出視窗、不響鈴、不震動，可以忽略。</string>
++    <string name="feedback_enable_consent">是否允許在本機儲存上述有限的技術資訊？不會自動傳送。你隨時可以關閉，並刪除已儲存的報告。</string>
++    <string name="feedback_enable_confirm">開啟本機記錄</string>
++    <string name="feedback_manual">手動回報 Bug</string>
++    <string name="feedback_saved_title">本機已儲存</string>
++    <string name="feedback_loading">正在讀取…</string>
++    <string name="feedback_delete_all">刪除已儲存報告</string>
++    <string name="feedback_delete_message">刪除本功能儲存在本機的所有報告？已提交至維護者後台的報告，需由維護者在後台刪除。</string>
++    <string name="feedback_delete_confirm">刪除</string>
++    <string name="feedback_empty">暫無報告</string>
++    <string name="feedback_saved_summary">點選報告查看內容，尚未傳送任何資訊。</string>
++    <string name="feedback_unavailable">暫時無法讀取報告</string>
++    <string name="feedback_kind_anr">應用程式無回應</string>
++    <string name="feedback_kind_native">底層程式當機</string>
++    <string name="feedback_kind_manual">手動回報</string>
++    <string name="feedback_kind_crash">當機</string>
++    <string name="feedback_preview_title">查看 Bug 報告</string>
++    <string name="feedback_preview_summary">下方技術內容就是將提交給維護者的完整內容，不附帶帳號或裝置識別資料。只有你確認後才會傳送。</string>
++    <string name="feedback_share_consent">我已查看這份報告，並願意分享給%1$s。</string>
++    <string name="feedback_share">提交給維護者</string>
++    <string name="feedback_share_destination">請選擇應用程式，再自行選擇%1$s作為接收方。系統不會自動選人。你選擇的應用程式可能附帶你的帳號身分或儲存一份副本。</string>
++    <string name="feedback_choose_app">選擇應用程式</string>
++    <string name="feedback_return">返回報告清單</string>
++    <string name="feedback_no_share_app">沒有可用的分享應用程式</string>
++    <string name="feedback_back">‹ 返回</string>
++    <string name="feedback_notification_channel">Bug 回報提醒</string>
++    <string name="feedback_notification_description">本機報告的靜音提醒，不會上傳資訊。</string>
++    <string name="feedback_notice_title">有一份 Bug 報告可查看</string>
++    <string name="feedback_notice_body">查看技術報告，自行決定是否分享給系統維護者。尚未傳送任何資訊。</string>
++    <string name="feedback_view_report">查看報告</string>
++    <string-array name="feedback_symptoms">
++        <item>當機</item>
++        <item>卡頓或無回應</item>
++        <item>黑畫面</item>
++        <item>播放異常</item>
++        <item>其他</item>
++    </string-array>
++    <string name="feedback_submission_unavailable">報告已儲存在本機，暫時無法提交，請等待維護者更新。</string>
++    <string name="feedback_submitting">正在提交…</string>
++    <string name="feedback_submitted">已提交</string>
++    <string name="feedback_submission_success">維護者已收到這份報告。</string>
++    <string name="feedback_submission_failed">未確認提交成功，報告仍保留在本機。你可以自行重試，系統不會自動重傳。</string>
++    <string name="feedback_hero_hint">先儲存在本機，由你確認後提交。</string>
++    <string name="feedback_privacy_summary">只含錯誤類型、程式碼位置和版本等技術資訊。不含帳號、聊天、照片或裝置識別資料，每次提交都由你確認。</string>
++    <string name="feedback_data_details">查看資料範圍和保留規則</string>
++    <string name="feedback_update_required">自動收集需要維護者提供的完整系統更新。你仍可手動建立並提交 Bug 報告。</string>
+ </resources>
+diff --git a/apps/ZramStatus/tools/provision-feedback.py b/apps/ZramStatus/tools/provision-feedback.py
+new file mode 100644
+--- /dev/null
++++ b/apps/ZramStatus/tools/provision-feedback.py
+@@ -0,0 +1,30 @@
++#!/usr/bin/env python3
++"""Generate the ignored client upload credential without printing it or putting it in Git."""
++import argparse,json,os,re,stat,subprocess
++from pathlib import Path
++p=argparse.ArgumentParser();p.add_argument('--config',required=True);p.add_argument('--source',required=True)
++a=p.parse_args();config=Path(a.config).expanduser().resolve();source=Path(a.source).resolve()
++if stat.S_IMODE(config.stat().st_mode)&0o077:raise SystemExit('Private configuration must have mode 0600.')
++values=dict(x.split('=',1) for x in config.read_text().splitlines() if '=' in x and not x.startswith('#'))
++token=values.get('INBOX_UPLOAD_TOKEN','')
++if not re.fullmatch(r'[A-Za-z0-9_-]{40,128}',token):raise SystemExit('Missing or invalid upload credential.')
++provider=source/'src/main/java/org/lineageos/zramstatus/FeedbackProvider.java'
++if provider.is_symlink():raise SystemExit('Refusing to replace a symlink.')
++root=subprocess.check_output(['git','-C',str(source),'rev-parse','--show-toplevel'],text=True).strip()
++relative=str(provider.relative_to(Path(root)))
++tracked=subprocess.run(['git','-C',root,'ls-files','--error-unmatch',relative],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
++if tracked.returncode==0:raise SystemExit('Credential provider must not be tracked by Git.')
++ignored=subprocess.run(['git','-C',root,'check-ignore','--quiet',relative])
++if ignored.returncode!=0:raise SystemExit('Add the credential provider to the app ignore file first.')
++body='''package org.lineageos.zramstatus;
++
++/** Generated build-private upload credential. Never commit this file. */
++final class FeedbackProvider {
++    private FeedbackProvider() { }
++    static String uploadToken() { return %s; }
++}
++''' % json.dumps(token)
++fd=os.open(provider,os.O_WRONLY|os.O_CREAT|os.O_TRUNC,0o600)
++with os.fdopen(fd,'w') as f:f.write(body)
++os.chmod(provider,0o600)
++print('Generated ignored build-private credential provider. Credential not printed.')
+diff --git a/apps/ZramStatus/xz1c-bug-feedback.xml b/apps/ZramStatus/xz1c-bug-feedback.xml
+new file mode 100644
+--- /dev/null
++++ b/apps/ZramStatus/xz1c-bug-feedback.xml
+@@ -0,0 +1,6 @@
++<?xml version="1.0" encoding="utf-8"?>
++<config>
++    <!-- Protected, permission-gated system event. Allows the opted-in receiver
++         to run without keeping the System Manager process permanently alive. -->
++    <allow-implicit-broadcast action="android.intent.action.DROPBOX_ENTRY_ADDED" />
++</config>
+diff --git a/device/sony/lilac/lineage_lilac_dcm.mk b/device/sony/lilac/lineage_lilac_dcm.mk
+--- a/device/sony/lilac/lineage_lilac_dcm.mk
++++ b/device/sony/lilac/lineage_lilac_dcm.mk
+@@ -113,3 +113,7 @@
+ # AirPods connection popup and battery companion
+ # xz1c 2026-10-20: AirPods 彈窗（預覽 0.1）暫不進發佈包（使用者決定），恢復時取消下一行註解。
+ # $(call inherit-product, device/sony/lilac/airpods-companion.mk)
++
++# Opt-in Bug feedback: permit protected DropBox events without a persistent app.
++PRODUCT_COPY_FILES += \
++    vendor/sony/lilac/apps/ZramStatus/xz1c-bug-feedback.xml:$(TARGET_COPY_OUT_SYSTEM)/etc/sysconfig/xz1c-bug-feedback.xml
