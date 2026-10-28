@@ -2,6 +2,8 @@
 
 **为小屏 Xperia 延续日常使用、音乐播放与跨设备连接体验。**
 
+[中文](#项目概况) · [English](#english)
+
 这是由 Yal3AY 维护、面向日版 Sony Xperia XZ1 Compact SO-02K 的非官方 Android 15 定制系统。基于 LineageOS 22.2，在系统管家、索尼音频、Apple 设备联动、翻译与文件阅读等方面持续完善，让这台小尺寸手机拥有更实用的现代系统体验。
 
 [下载系统](https://github.com/yal3ay/xz1c-lineageos-22/releases) · [查看更新记录](https://github.com/yal3ay/xz1c-lineageos-22/releases) · [反馈问题](https://github.com/yal3ay/xz1c-lineageos-22/issues) · [安全问题](SECURITY.md)
@@ -173,24 +175,93 @@ testkey       34:8C:61:3A:CB:3C:31:85:55:93:9F:00:EA:8F:EE:77:27:CF:87:6D:0B:01:
 
 感谢 LineageOS、Android 开源项目、Sony 开源设备社区，以及项目中使用的开源组件作者和测试用户。
 
-## English overview
+## English
 
-An unofficial Android 15 / LineageOS 22.2 project maintained by Yal3AY for the Japanese **Sony Xperia XZ1 Compact SO-02K**. It brings together practical device management, Sony audio controls, Apple-device integration, translation and local document reading.
+### A modern Android experience for a compact Xperia
 
-Highlights include:
+This unofficial project brings **Android 15 and LineageOS 22.2** to the Japanese **Sony Xperia XZ1 Compact SO-02K**. It combines device-specific fixes with custom tools for audio, everyday system management, translation, document reading and connecting to Apple devices.
 
-- A redesigned System Manager with memory status, app and background management, cleanup, app precompilation and seven-day battery history.
-- Audio controls with actual-output information, compatible direct playback, Sony audio enhancement and headphone / Bluetooth quality options.
-- Wireless audio output, Apple TV screen mirroring and a remote with playback, volume, text input and lock-screen controls. Device and network compatibility apply.
-- A system sharing page with supported same-network Mac transfers, LocalSend-based phone transfers and Google Quick Share handoff. Universal native iPhone / Mac interoperability is not claimed.
-- Floating translation cards, an offline English dictionary, optional online translation and speech services, and flashcards with Anki export.
-- An offline document viewer, Xperia weather and lunar-calendar lock-screen information, wake gestures and system utilities.
-- Opt-in local Bug reports with explicit review and submission in the **20261026 developer release**.
+[Downloads and release notes](https://github.com/yal3ay/xz1c-lineageos-22/releases) · [Report an issue](https://github.com/yal3ay/xz1c-lineageos-22/issues) · [Security policy](SECURITY.md) · [中文](#xperia-xz1-compact--so-02k--lineageos-222)
 
-**Release status matters.** The default update feed currently points to `22.2-20261010-r6`; the developer feed points to `22.2-20261026-r1`. Features described above refer to the development line and may not exist in the older default-channel build. The Android security patch level is **2026-08-01**.
+> This is an independent project, not an official Sony or LineageOS release. Only SO-02K is the target of the documented device testing; other XZ1 Compact variants have not been verified. Features below describe the development line as documented on 2026-10-27. Read the notes for your specific build: the older default update channel does not include every feature below.
 
-User-started reproduction sessions with optional screen video have been tested on the phone but are **not yet included in a published system update**. The intermittent Douyin daily/photo-to-video corruption issue is still awaiting a reproducible sample.
+| | |
+| --- | --- |
+| Device | Xperia XZ1 Compact SO-02K (`lilac`; build target `lineage_lilac_dcm`) |
+| System | Android 15 / LineageOS 22.2 |
+| Kernel | Linux 4.4.302 |
+| Android security patch level | 2026-08-01; this is not the release date |
+| Default update channel, as documented | [22.2-20261010-r6](https://github.com/yal3ay/xz1c-lineageos-22/releases/tag/22.2-20261010-r6) |
+| Developer update channel, as documented | [22.2-20261026-r1](https://github.com/yal3ay/xz1c-lineageos-22/releases/tag/22.2-20261026-r1), a prerelease with newer features and fixes |
 
-Use the [release notes and downloads](https://github.com/yal3ay/xz1c-lineageos-22/releases) for the matching build. Existing installations on the same project signing identity normally retain data during updates; first installs and signing migrations require their own installation procedure. Back up important data, especially when using an adopted-storage card. Sony and Google application add-ons are distributed separately.
+### What you can do
 
-Source links, component licensing, public signing fingerprints and private vulnerability-reporting instructions are provided above.
+#### Manage the phone in one place
+
+The custom **System Manager** brings memory and running status, background and autostart controls, cleanup, app management and app precompilation together. It can remember compilation choices and run batch operations or schedule work after app and system updates.
+
+The battery page keeps local history across charging cycles, with 24-hour and seven-day charts, screen-on time and estimated per-app use. App management shows size and recent use and offers force stop, cache clearing and uninstalling. Cleanup requires the user to choose personal or large files. The acceleration action can stop applications that are currently running, including music players.
+
+#### See and control audio output
+
+The custom **Hi-Fi Audio** page shows the output device, sample rate, bit depth and available playback-path information. It provides compatible direct-output options for wired headphones and external audio devices, Sony sound enhancement, optional headphone output boost and Bluetooth quality settings.
+
+**DSEE HX** is Sony's processing for compatible compressed audio paths. Headphone boost is optional; lower the volume before switching it on and return to the original setting if distortion occurs. Bluetooth quality depends on the connected device and codec and is not the same as lossless wired playback. Direct playback and source information depend on the player, media format and output device; the page does not guarantee that every app uses the same path.
+
+#### Send audio and control Apple TV
+
+**AirPlay** is integrated into the system media output panel and quick settings. Select a compatible HomePod or Apple TV for audio, adjust the receiver's volume, or mirror the screen and sound to a compatible Apple TV. Initial pairing may require a code displayed by the receiver.
+
+The built-in **Apple TV remote** includes a touchpad, playback and volume controls, device switching and text entry from the phone. Its lock-screen media card uses progress and duration supplied by the receiver; it does not invent a duration for live content. Receiver model, network, access settings and content protection affect compatibility. Audio-only streaming has buffering delay and should not be assumed to provide low-latency video synchronization.
+
+#### Share files nearby
+
+The system share menu's **AirDrop** entry opens a nearby-device picker. It supports sending to compatible Macs that accept the project's same-network transfer path, phone-to-phone transfers using LocalSend with an acceptance screen and verification code, and handoff to Google Quick Share when available. Discovery and receiving run while the share page is open; an active transfer can continue in the background.
+
+Mac receiving settings and network conditions matter. This implementation does **not** claim universal native AirDrop interoperability with iPhones or all newer Macs; consult the release notes for the tested scope.
+
+#### Translate, read and review
+
+Select text in a supported app to open a floating **translation card** with original and translated text, copy and speech controls, and an option to save a flashcard. The offline English dictionary handles common words locally. Google or user-configured DeepSeek translation and optional online speech require network access and send the selected text to the chosen service. Flashcards support reminders, review ratings and Anki-compatible export. The earlier separate BigBang entry is currently disabled.
+
+The built-in **Documents** viewer is adapted from the open-source Gander project. It opens common office documents, images and media locally and offers search, night mode, printing and saving a copy. It does not require network permission; rendering support depends on the file and viewing components. Credits and licenses are available in the app.
+
+#### Make the most of the hardware
+
+- Lunar calendar, seasonal information and Xperia weather on the lock screen, with selectable details such as humidity, wind, ultraviolet index and air quality.
+- Double-tap and volume-button wake options, plus a published fix for intermittent touch failure after waking and unlocking.
+- SMS verification-code prompts and autofill; device-specific call audio and VoLTE configuration.
+- Adoptable storage for using a compatible SD card as internal storage; performance and reliability depend on the card.
+- Integrated WireGuard and Shizuku, KernelSU-Next support, and Google service status and compatibility settings. Shizuku and root access grant different capabilities and require appropriate user authorization. Google certification, payment and third-party app compatibility cannot be guaranteed.
+
+#### Report a problem with consent
+
+The **20261026 developer release** adds an opt-in Bug Feedback page to System Manager. Automatic collection and reminders are off by default. When enabled, limited technical information is saved locally; users review each report and choose whether to submit it. Reports do not automatically upload full logs or attach accounts, chats, photos or unique device identifiers. Local reports expire after seven days, with a maximum of 20; the backend is configured to delete reports after 30 days. See the release notes for the remaining validation scope.
+
+### Known limitations and work in progress
+
+- An intermittent display corruption issue affecting some Douyin daily posts made from photos and music is still being investigated. A reproducible sample is needed; no cause or fix has been confirmed.
+- User-started reproduction recording with optional screen video has been tested on a phone but is **not included in a published system update**. Recording and sending require separate consent.
+- Full native sharing interoperability with all Apple devices remains under development. A successful discovery or handshake alone does not prove a completed transfer.
+- Network storage, the separate theme-color entry, the Sheep AI assistant and the AirPods popup are not presented as available features in current releases. Function availability and testing differ between builds.
+
+### Download and installation
+
+Download the matching system package, recovery image and checksum list from [GitHub Releases](https://github.com/yal3ay/xz1c-lineageos-22/releases). Sony applications and Google Apps are managed separately. Follow the **specific release notes** for installation and validation details.
+
+- Updates from an existing build signed with the same project keys normally retain data; do not wipe data during a routine update.
+- First installation or migration from a differently signed system may require an unlocked bootloader, a matching recovery environment and a data wipe. Back up and verify important data first.
+- If an SD card is configured as internal storage, its encryption key is stored in the phone's data partition. Wiping that partition can make the card's data unreadable. Export important files and app data separately first.
+- Use add-ons compatible with the project's version and signing identity. Verify downloads against the release's `SHA256SUMS`, for example with `shasum -a 256 -c SHA256SUMS`.
+
+For maintainers, see the [OTA release workflow](OTA_RELEASE_WORKFLOW.md). Full update packages are currently used; an incremental build is not the same thing as an incremental update package.
+
+### Source, licenses and feedback
+
+Device configuration: [lilac](https://github.com/yal3ay/android_device_sony_lilac) and [Yoshino common](https://github.com/yal3ay/android_device_sony_yoshino-common). Other sources: [msm8998 kernel](https://github.com/yal3ay/android_kernel_sony_msm8998), [local manifests and extraction notes](https://github.com/yal3ay/xz1c_local_manifests), [system patches](https://github.com/yal3ay/xz1c_lineageos_22_patches), and [patches in this repository](patches/). The kernel is GPL-2.0; other components retain their own licenses, and this repository's license is in [LICENSE](LICENSE).
+
+Sony proprietary files and device-extracted binaries are not distributed in those source repositories; extract them from a device or firmware you legally possess. Public signing certificate fingerprints are listed in the Chinese section above; private keys are not published. Use file checksums, not certificate fingerprints, to verify downloads.
+
+For ordinary problems, open an [issue](https://github.com/yal3ay/xz1c-lineageos-22/issues) with the device, build, steps and expected behavior, removing personal information from attachments. Report unpatched security vulnerabilities privately as described in the [security policy](SECURITY.md).
+
+Thanks to LineageOS, the Android Open Source Project, the Sony open-device community, open-source component authors and project testers.
