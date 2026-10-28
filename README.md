@@ -10,6 +10,24 @@
 
 > 适配与验证以 **SO-02K** 为目标；其他 XZ1 Compact 变体未验证。本项目不是 Sony 或 LineageOS 官方发行版。以下介绍核对于 **2026-10-27**，具体可用功能以所选版本的发行说明为准。
 
+## 功能一览
+
+> 以下汇总开发版中的功能；默认更新通道版本较旧，实际功能请以所安装版本的发行说明为准。
+
+| 想做什么 | 系统提供的功能 |
+| --- | --- |
+| 管理手机 | **系统管家**查看内存、处理器和电池历史，管理后台、自启动、应用和缓存，批量预编译应用。 |
+| 听音乐 | **高保真音频**查看实际输出设备、采样率和位深；兼容路径支持直通、索尼音效、耳机输出增强和蓝牙音质设置。 |
+| 听音箱、看电视 | **AirPlay**把媒体声音发送到兼容音箱；向兼容的 Apple TV 镜像画面和声音，并用手机遥控、调音量和输入文字。 |
+| 分享文件 | 系统分享页可在受支持的同一无线网络环境下向 Mac 发送文件，通过 LocalSend 与手机收发，或转交 Google 快速分享。 |
+| 阅读与学习 | 选中文字即可打开翻译卡；英文单词可离线查词，收藏后用单词卡复习，并导出到 Anki。 |
+| 查看文件 | **文档**应用在本机打开常见办公文档、图片和媒体，支持搜索、夜间模式和打印。 |
+| 查看天气 | 锁屏显示农历、节气和 Xperia 天气，并可选择湿度、风力、紫外线和空气质量等信息。 |
+| 日常操作 | 支持双击或音量键唤醒、短信验证码提示、存储卡作为内部存储，以及针对通话和触摸的设备适配。 |
+| 更新与反馈 | 系统内检查更新、管理附加包；开发版可选择启用问题反馈，并在查看报告后决定是否提交。 |
+
+**兼容范围：**音频效果受播放器和输出设备影响；AirPlay 和文件分享取决于接收设备及网络，尚不支持所有苹果设备的原生隔空投送。部分功能仅见于开发版。
+
 ## 项目概况
 
 | 项目 | 内容 |
@@ -193,6 +211,24 @@ This unofficial project brings **Android 15 and LineageOS 22.2** to the Japanese
 | Android security patch level | 2026-08-01; this is not the release date |
 | Default update channel, as documented | [22.2-20261010-r6](https://github.com/yal3ay/xz1c-lineageos-22/releases/tag/22.2-20261010-r6) |
 | Developer update channel, as documented | [22.2-20261026-r1](https://github.com/yal3ay/xz1c-lineageos-22/releases/tag/22.2-20261026-r1), a prerelease with newer features and fixes |
+
+### Features at a glance
+
+> These highlights describe the development line. The older default-channel build may not include them; check the release notes for your installed version.
+
+| What you want to do | What the system offers |
+| --- | --- |
+| Manage the phone | **System Manager** shows memory, processor and battery history; manage background activity, autostart, apps and caches, and precompile apps in batches. |
+| Listen to music | **Hi-Fi Audio** shows the actual output device, sample rate and bit depth, with direct output, Sony effects, headphone boost and Bluetooth quality options on compatible paths. |
+| Use speakers and TV | Send audio to compatible speakers with **AirPlay**, mirror screen and sound to a compatible Apple TV, and control playback, volume and text entry from the phone. |
+| Share files | Send to supported Macs on the same Wi-Fi, exchange files with phones using LocalSend, or hand off to Google Quick Share. |
+| Read and learn | Translate selected text in a floating card, look up common English words offline, review saved flashcards and export them to Anki. |
+| Open documents | View common office files, images and media locally, with search, night mode and printing. |
+| Check the weather | See the lunar calendar and Xperia weather on the lock screen, with optional humidity, wind, UV and air-quality details. |
+| Everyday use | Wake with a double tap or volume key, use SMS code prompts, configure an SD card as internal storage, and benefit from device-specific call and touch fixes. |
+| Update and report | Check for updates and manage add-ons; developer builds offer opt-in problem reports that you review before submitting. |
+
+Audio behavior depends on the player and output device. AirPlay and sharing depend on the receiver and network; native AirDrop interoperability with every Apple device is not supported.
 
 ### What you can do
 
