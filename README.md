@@ -8,7 +8,7 @@
 
 [下载系统](https://github.com/yal3ay/xz1c-lineageos-22/releases) · [查看更新记录](https://github.com/yal3ay/xz1c-lineageos-22/releases) · [反馈问题](https://github.com/yal3ay/xz1c-lineageos-22/issues) · [安全问题](SECURITY.md)
 
-> 适配与验证以 **SO-02K** 为目标；其他 XZ1 Compact 变体未验证。本项目不是 Sony 或 LineageOS 官方发行版。以下介绍核对于 **2026-10-27**，具体可用功能以所选版本的发行说明为准。
+> 适配与验证以 **SO-02K** 为目标；其他 XZ1 Compact 变体未验证。本项目不是 Sony 或 LineageOS 官方发行版。以下介绍核对于 **2026-10-30**，具体可用功能以所选版本的发行说明为准。
 
 ## 功能一览
 
@@ -38,7 +38,7 @@
 | 内核基础 | Linux 4.4.302 |
 | 当前系统安全补丁日期 | **2026-08-01**，不等同于安装包的发布日期 |
 | 默认更新通道 | [22.2-20261010-r6](https://github.com/yal3ay/xz1c-lineageos-22/releases/tag/22.2-20261010-r6) |
-| 开发者更新通道 | [22.2-20261026-r1](https://github.com/yal3ay/xz1c-lineageos-22/releases/tag/22.2-20261026-r1)，包含较新的功能与修复，仍属预发布 |
+| 开发者更新通道 | [22.2-20261030-r1](https://github.com/yal3ay/xz1c-lineageos-22/releases/tag/22.2-20261030-r1)，包含较新的功能与修复，仍属预发布 |
 
 默认通道和开发者通道更新节奏不同。想体验最新功能，可在系统更新设置中选择开发者更新；请先阅读对应版本的说明和验证范围。
 
@@ -124,11 +124,13 @@ Shizuku 向用户授权的兼容工具提供部分系统能力；KernelSU-Next �
 
 本功能用于帮助维护者分析问题，不提供远程控制用户手机的能力。自动收集的首次启动行为等验证范围，请参阅该版本发行说明。
 
+从 [22.2-20261030-r1](https://github.com/yal3ay/xz1c-lineageos-22/releases/tag/22.2-20261030-r1) 起，手动反馈可选择应用并填写问题描述，报告附带所选应用的版本。“重现 Bug”可主动记录最多3分钟，附上可选的无声录屏，并尝试保存有限的播放诊断；无法取得的信息会明确标注。应用进程与共享媒体服务的记录分别标记，共享服务错误不能直接归因于所选应用。这项更新改进问题取证，**不代表已修复抖音花屏**。
+
 ## 正在测试与已知限制
 
 | 功能或问题 | 当前状态 |
 | --- | --- |
-| 主动记录复现过程＋可选录屏 | 客户端已在手机测试，录制、本机播放与等比例预览已确认；需分别同意记录和发送，**尚未进入已发布系统更新包** |
+| 主动记录复现过程＋可选录屏 | 已包含在 [22.2-20261030-r1](https://github.com/yal3ay/xz1c-lineageos-22/releases/tag/22.2-20261030-r1)；本轮通过编译与包内容检查，尚未进行新整包安装和录屏的真机验证 |
 | 抖音“日常”图片配音乐转成的视频偶发花屏 | 等待同一条故障内容复现，**尚未确认根因或发布修复** |
 | 跨设备分享 | 已有系统入口与受限环境的发送路径；完整原生互传仍在研发 |
 | 部分旧功能 | 网络存储挂载、独立主题色入口、小羊助手及 AirPods 弹窗目前不作为已发布版本的可用功能介绍 |
@@ -201,7 +203,7 @@ This unofficial project brings **Android 15 and LineageOS 22.2** to the Japanese
 
 [Downloads and release notes](https://github.com/yal3ay/xz1c-lineageos-22/releases) · [Report an issue](https://github.com/yal3ay/xz1c-lineageos-22/issues) · [Security policy](SECURITY.md) · [中文](#xperia-xz1-compact--so-02k--lineageos-222)
 
-> This is an independent project, not an official Sony or LineageOS release. Only SO-02K is the target of the documented device testing; other XZ1 Compact variants have not been verified. Features below describe the development line as documented on 2026-10-27. Read the notes for your specific build: the older default update channel does not include every feature below.
+> This is an independent project, not an official Sony or LineageOS release. Only SO-02K is the target of the documented device testing; other XZ1 Compact variants have not been verified. Features below describe the development line as documented on 2026-10-30. Read the notes for your specific build: the older default update channel does not include every feature below.
 
 | | |
 | --- | --- |
@@ -210,7 +212,7 @@ This unofficial project brings **Android 15 and LineageOS 22.2** to the Japanese
 | Kernel | Linux 4.4.302 |
 | Android security patch level | 2026-08-01; this is not the release date |
 | Default update channel, as documented | [22.2-20261010-r6](https://github.com/yal3ay/xz1c-lineageos-22/releases/tag/22.2-20261010-r6) |
-| Developer update channel, as documented | [22.2-20261026-r1](https://github.com/yal3ay/xz1c-lineageos-22/releases/tag/22.2-20261026-r1), a prerelease with newer features and fixes |
+| Developer update channel, as documented | [22.2-20261030-r1](https://github.com/yal3ay/xz1c-lineageos-22/releases/tag/22.2-20261030-r1), a prerelease with newer features and fixes |
 
 ### Features at a glance
 
@@ -274,10 +276,12 @@ The built-in **Documents** viewer is adapted from the open-source Gander project
 
 The **20261026 developer release** adds an opt-in Bug Feedback page to System Manager. Automatic collection and reminders are off by default. When enabled, limited technical information is saved locally; users review each report and choose whether to submit it. Reports do not automatically upload full logs or attach accounts, chats, photos or unique device identifiers. Local reports expire after seven days, with a maximum of 20; the backend is configured to delete reports after 30 days. See the release notes for the remaining validation scope.
 
+Starting with [22.2-20261030-r1](https://github.com/yal3ay/xz1c-lineageos-22/releases/tag/22.2-20261030-r1), manual reports include a chosen app and problem description, with the app version attached. User-started reproduction sessions last up to three minutes and can include silent video and bounded playback diagnostics. Missing information is explicitly marked; selected-app and shared media-service records are labeled separately. These are diagnostic clues, not proof of a root cause. **This update does not claim to fix Douyin display corruption.**
+
 ### Known limitations and work in progress
 
 - An intermittent display corruption issue affecting some Douyin daily posts made from photos and music is still being investigated. A reproducible sample is needed; no cause or fix has been confirmed.
-- User-started reproduction recording with optional screen video has been tested on a phone but is **not included in a published system update**. Recording and sending require separate consent.
+- User-started reproduction recording and optional silent screen video are included in [22.2-20261030-r1](https://github.com/yal3ay/xz1c-lineageos-22/releases/tag/22.2-20261030-r1). Build and artifact checks passed; a new complete installation and recording test on XZ1C were not performed in this task. Recording and sending require separate consent.
 - Full native sharing interoperability with all Apple devices remains under development. A successful discovery or handshake alone does not prove a completed transfer.
 - Network storage, the separate theme-color entry, the Sheep AI assistant and the AirPods popup are not presented as available features in current releases. Function availability and testing differ between builds.
 
