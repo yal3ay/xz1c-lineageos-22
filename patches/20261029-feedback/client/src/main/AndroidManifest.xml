@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="org.lineageos.zramstatus"
+    android:versionCode="20261029"
+    android:versionName="22.2-feedback.20261029"
+    android:sharedUserId="android.uid.system">
+    <uses-permission android:name="android.permission.DEVICE_POWER" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.REAL_GET_TASKS" />
+    <uses-permission android:name="android.permission.KILL_BACKGROUND_PROCESSES" />
+    <uses-permission android:name="android.permission.KILL_ALL_BACKGROUND_PROCESSES" />
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
+    <uses-permission android:name="android.permission.BATTERY_STATS" />
+    <!-- Junk clean and Apps: app sizes, last use, cache clearing, shared storage -->
+    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" />
+    <uses-permission android:name="android.permission.MODIFY_DAY_NIGHT_MODE" />
+    <uses-permission android:name="android.permission.DELETE_CACHE_FILES" />
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.DELETE_PACKAGES" />
+    <uses-permission android:name="android.permission.CHANGE_COMPONENT_ENABLED_STATE" />
+    <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" />
+    <uses-permission android:name="android.permission.FORCE_STOP_PACKAGES" />
+    <uses-permission android:name="android.permission.GET_ACCOUNTS_PRIVILEGED" />
+    <uses-permission android:name="lineageos.permission.WRITE_SETTINGS" />
+    <uses-permission android:name="android.permission.READ_LOGS" />
+    <uses-permission android:name="android.permission.READ_DROPBOX_DATA" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <queries>
+        <package android:name="com.sonymobile.xperiaweather" />
+    </queries>
+    <application android:label="@string/app_name" android:allowBackup="false"
+        android:icon="@drawable/ic_launcher_system_manager"
+        android:roundIcon="@drawable/ic_launcher_system_manager">
+        <activity android:name=".ZramStatusActivity" android:exported="true"
+            android:label="@string/app_name" android:icon="@drawable/ic_launcher_system_manager"
+            android:theme="@android:style/Theme.DeviceDefault.Light.NoActionBar">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <receiver android:name=".StaleUpdateReceiver" android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+        <receiver android:name=".DexoptPackageReceiver" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.PACKAGE_REPLACED" />
+                <data android:scheme="package" />
+            </intent-filter>
+        </receiver>
+        <service android:name=".DexoptJob" android:exported="false"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
+        <service android:name=".BatteryLogJob" android:exported="false"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
+        <service android:name=".KeyguardWeatherJob" android:exported="false"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
+        <service android:name=".NasScanJob" android:exported="false"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
+        <service android:name=".FeedbackSessionService" android:exported="false"
+            android:foregroundServiceType="mediaProjection|specialUse" android:stopWithTask="false">
+            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="User initiated bounded Bug reproduction diagnostics, stopped from visible notification" />
+        </service>
+        <activity android:name=".FeedbackActivity" android:exported="false"
+            android:theme="@android:style/Theme.DeviceDefault.Light.NoActionBar" />
+        <receiver android:name=".FeedbackReceiver" android:exported="true" android:enabled="false"
+            android:permission="android.permission.READ_DROPBOX_DATA">
+            <intent-filter>
+                <action android:name="android.intent.action.DROPBOX_ENTRY_ADDED" />
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+        <activity android:name=".FeatureActivity" android:exported="false"
+            android:theme="@android:style/Theme.DeviceDefault.Light.NoActionBar" />
+        <!-- xz1c 2026-10-16: 主題色暫時停用（使用者：先註解，之後再做）。
+        Settings > Display > Theme colour
+        <activity-alias android:name=".ThemeColorEntry"
+            android:targetActivity=".FeatureActivity" android:exported="true"
+            android:label="@string/theme_title" android:icon="@drawable/ic_sm_theme">
+            <intent-filter>
+                <action android:name="com.android.settings.action.EXTRA_SETTINGS" />
+            </intent-filter>
+            <meta-data android:name="com.android.settings.category"
+                android:value="com.android.settings.category.ia.display" />
+            <meta-data android:name="com.android.settings.order" android:value="100" />
+            <meta-data android:name="com.android.settings.summary"
+                android:resource="@string/theme_settings_summary" />
+            <meta-data android:name="com.android.settings.icon_tintable" android:value="true" />
+        </activity-alias>
+        -->
+        <activity-alias android:name=".KeyguardInfoEntry"
+            android:targetActivity=".FeatureActivity" android:exported="true"
+            android:label="@string/kg_title" android:icon="@drawable/ic_sm_battery">
+            <intent-filter>
+                <action android:name="com.android.settings.action.EXTRA_SETTINGS" />
+            </intent-filter>
+            <meta-data android:name="com.android.settings.category"
+                android:value="com.android.settings.category.ia.display" />
+            <meta-data android:name="com.android.settings.summary"
+                android:resource="@string/kg_settings_summary" />
+        </activity-alias>
+        <activity-alias android:name=".ZramStatusSettingsEntry"
+            android:targetActivity=".ZramStatusActivity" android:exported="true"
+            android:label="@string/app_name" android:icon="@drawable/ic_zram_status">
+            <intent-filter>
+                <action android:name="com.android.settings.action.EXTRA_SETTINGS" />
+            </intent-filter>
+            <meta-data android:name="com.android.settings.category"
+                android:value="com.android.settings.category.ia.system" />
+            <meta-data android:name="com.android.settings.order"
+                android:value="-10" />
+            <meta-data android:name="com.android.settings.icon"
+                android:resource="@drawable/ic_zram_status" />
+            <meta-data android:name="com.android.settings.icon_tintable"
+                android:value="true" />
+        </activity-alias>
+    </application>
+</manifest>

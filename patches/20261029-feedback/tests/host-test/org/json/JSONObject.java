@@ -1,0 +1,1 @@
+package org.json; public class JSONObject { private final java.util.Map<String,Object> data=new java.util.HashMap<>(); public JSONObject put(String k,Object v){data.put(k,v);return this;} public boolean has(String k){return data.containsKey(k);} public String getString(String k){return (String)data.get(k);} }
