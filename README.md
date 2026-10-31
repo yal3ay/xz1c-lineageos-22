@@ -38,7 +38,7 @@
 | 内核基础 | Linux 4.4.302 |
 | 当前系统安全补丁日期 | **2026-08-01**，不等同于安装包的发布日期 |
 | 默认更新通道 | [22.2-20261010-r6](https://github.com/yal3ay/xz1c-lineageos-22/releases/tag/22.2-20261010-r6) |
-| 开发者更新通道 | [22.2-20261030-r2](https://github.com/yal3ay/xz1c-lineageos-22/releases/tag/22.2-20261030-r2)，内置近连（Nearbo）应用与最新修复，仍属预发布 |
+| 开发者更新通道 | [22.2-20261031-r1](https://github.com/yal3ay/xz1c-lineageos-22/releases/tag/22.2-20261031-r1)，内置近连（Nearbo 1.0.56）应用与最新系统修复，仍属预发布 |
 
 默认通道和开发者通道更新节奏不同。想体验最新功能，可在系统更新设置中选择开发者更新；请先阅读对应版本的说明和验证范围。
 
@@ -65,7 +65,7 @@
 
 ### 近连（Nearbo）：投屏、音乐、遥控与局域网互传应用
 
-开发者版本 **[22.2-20261030-r2](https://github.com/yal3ay/xz1c-lineageos-22/releases/tag/22.2-20261030-r2)** 起，系统内置独立的 **近连（Nearbo）** 应用（`com.xz1c.appleconnect`，版本 **1.0.53**），把大屏投送、电视遥控与局域网文件分享整合在同一处：
+开发者版本 **[22.2-20261030-r2](https://github.com/yal3ay/xz1c-lineageos-22/releases/tag/22.2-20261030-r2)** 起，系统内置独立的 **近连（Nearbo）** 应用（`com.xz1c.appleconnect`，版本 **1.0.56**），把大屏投送、电视遥控与局域网文件分享整合在同一处：
 
 - **屏幕镜像与原画投屏**：将手机画面与允许捕获的媒体／游戏声音镜像到同一无线网络下的兼容 Apple TV、Nearbo TV 及支持 AirPlay 的电视或投影仪；支持全屏或单应用投屏、画质与方向设置，以及将正在播放的视频原画推送到受支持的接收端。
 - **音乐投送**：向兼容音箱或电视串流音乐，提供实时歌词、播放控制、独立音量与睡眠定时。
@@ -223,7 +223,7 @@ This unofficial project brings **Android 15 and LineageOS 22.2** to the Japanese
 | Kernel | Linux 4.4.302 |
 | Android security patch level | 2026-08-01; this is not the release date |
 | Default update channel, as documented | [22.2-20261010-r6](https://github.com/yal3ay/xz1c-lineageos-22/releases/tag/22.2-20261010-r6) |
-| Developer update channel, as documented | [22.2-20261030-r2](https://github.com/yal3ay/xz1c-lineageos-22/releases/tag/22.2-20261030-r2), a prerelease with the built-in Nearbo app and latest fixes |
+| Developer update channel, as documented | [22.2-20261031-r1](https://github.com/yal3ay/xz1c-lineageos-22/releases/tag/22.2-20261031-r1), a prerelease with built-in Nearbo 1.0.56 and latest system fixes |
 
 ### Features at a glance
 
@@ -259,7 +259,7 @@ The custom **Hi-Fi Audio** page shows the output device, sample rate, bit depth 
 
 #### Built-in Nearbo app: casting, music, TV remote and local sharing
 
-Starting with **[22.2-20261030-r2](https://github.com/yal3ay/xz1c-lineageos-22/releases/tag/22.2-20261030-r2)**, the developer build includes the standalone **Nearbo** app (`com.xz1c.appleconnect`, version **1.0.53**) in `/system/app/Nearbo`, combining big-screen casting, remote control and local file sharing in one app:
+Starting with **[22.2-20261030-r2](https://github.com/yal3ay/xz1c-lineageos-22/releases/tag/22.2-20261030-r2)**, the developer build includes the standalone **Nearbo** app (`com.xz1c.appleconnect`, version **1.0.56**) in `/system/app/Nearbo`, combining big-screen casting, remote control and local file sharing in one app:
 
 - **Screen mirroring and video casting**: mirror the phone screen and permitted media/game audio to compatible Apple TVs, Nearbo TV receivers and AirPlay-compatible TVs or speakers on the same Wi-Fi, with full-screen or single-app sharing, picture quality and orientation options, plus original-quality video casting to supported receivers.
 - **Music streaming**: stream audio to compatible speakers or TVs with live lyrics, playback controls, per-device volume and a sleep timer.
