@@ -8,11 +8,11 @@
 
 [下载系统](https://github.com/yal3ay/xz1c-lineageos-22/releases) · [查看更新记录](https://github.com/yal3ay/xz1c-lineageos-22/releases) · [反馈问题](https://github.com/yal3ay/xz1c-lineageos-22/issues) · [安全问题](SECURITY.md)
 
-> 适配与验证以 **SO-02K** 为目标；其他 XZ1 Compact 变体未验证。本项目不是 Sony 或 LineageOS 官方发行版。以下介绍核对于 **2026-10-30**，具体可用功能以所选版本的发行说明为准。
+> 适配与验证以 **SO-02K** 为目标；其他 XZ1 Compact 变体未验证。本项目不是 Sony 或 LineageOS 官方发行版。以下介绍核对于 **2026-10-31**，具体可用功能以所选版本的发行说明为准。
 
 ## 功能一览
 
-> 以下汇总开发版中的功能；默认更新通道版本较旧，实际功能请以所安装版本的发行说明为准。
+> 以下功能自 **22.2-20261031-r1** 起已进入默认更新通道；实际功能请以所安装版本的发行说明为准。
 
 | 想做什么 | 系统提供的功能 |
 | --- | --- |
@@ -24,9 +24,9 @@
 | 查看文件 | **文档**应用在本机打开常见办公文档、图片和媒体，支持搜索、夜间模式和打印。 |
 | 查看天气 | 锁屏显示农历、节气和 Xperia 天气，并可选择湿度、风力、紫外线和空气质量等信息。 |
 | 日常操作 | 支持双击或音量键唤醒、短信验证码提示、存储卡作为内部存储，以及针对通话和触摸的设备适配。 |
-| 更新与反馈 | 系统内检查更新、管理附加包；开发版可选择启用问题反馈，并在查看报告后决定是否提交。 |
+| 更新与反馈 | 系统内检查更新、管理附加包；可选择启用问题反馈，并在查看报告后决定是否提交。 |
 
-**兼容范围：**音频效果受播放器和输出设备影响；AirPlay 和文件分享取决于接收设备及网络，尚不支持所有苹果设备的原生隔空投送。部分功能仅见于开发版。
+**兼容范围：**音频效果受播放器和输出设备影响；AirPlay 和文件分享取决于接收设备及网络，尚不支持所有苹果设备的原生隔空投送。部分功能仅见于开发者通道的最新版本。
 
 ## 项目概况
 
@@ -37,10 +37,10 @@
 | 系统基础 | Android 15 / LineageOS 22.2 |
 | 内核基础 | Linux 4.4.302 |
 | 当前系统安全补丁日期 | **2026-08-01**，不等同于安装包的发布日期 |
-| 默认更新通道 | [22.2-20261010-r6](https://github.com/yal3ay/xz1c-lineageos-22/releases/tag/22.2-20261010-r6) |
-| 开发者更新通道 | [22.2-20261031-r1](https://github.com/yal3ay/xz1c-lineageos-22/releases/tag/22.2-20261031-r1)，内置近连（Nearbo 1.0.56）应用与最新系统修复，仍属预发布 |
+| 默认更新通道 | [22.2-20261031-r1](https://github.com/yal3ay/xz1c-lineageos-22/releases/tag/22.2-20261031-r1) |
+| 开发者更新通道 | 与默认通道相同（[22.2-20261031-r1](https://github.com/yal3ay/xz1c-lineageos-22/releases/tag/22.2-20261031-r1)），暂无新的开发版 |
 
-默认通道和开发者通道更新节奏不同。想体验最新功能，可在系统更新设置中选择开发者更新；请先阅读对应版本的说明和验证范围。
+当前默认通道与开发者通道为同一版本；后续开发版仍会先在开发者通道发布，请先阅读对应版本的说明和验证范围。
 
 ## 主要功能
 
@@ -65,7 +65,7 @@
 
 ### 近连（Nearbo）：投屏、音乐、遥控与局域网互传应用
 
-开发者版本 **[22.2-20261030-r2](https://github.com/yal3ay/xz1c-lineageos-22/releases/tag/22.2-20261030-r2)** 起，系统内置独立的 **近连（Nearbo）** 应用（`com.xz1c.appleconnect`，版本 **1.0.56**），把大屏投送、电视遥控与局域网文件分享整合在同一处：
+自 **[22.2-20261030-r2](https://github.com/yal3ay/xz1c-lineageos-22/releases/tag/22.2-20261030-r2)** 起（现已在默认通道），系统内置独立的 **近连（Nearbo）** 应用（`com.xz1c.appleconnect`，版本 **1.0.56**），把大屏投送、电视遥控与局域网文件分享整合在同一处：
 
 - **屏幕镜像与原画投屏**：将手机画面与允许捕获的媒体／游戏声音镜像到同一无线网络下的兼容 Apple TV、Nearbo TV 及支持 AirPlay 的电视或投影仪；支持全屏或单应用投屏、画质与方向设置，以及将正在播放的视频原画推送到受支持的接收端。
 - **音乐投送**：向兼容音箱或电视串流音乐，提供实时歌词、播放控制、独立音量与睡眠定时。
@@ -126,7 +126,7 @@ Shizuku 向用户授权的兼容工具提供部分系统能力；KernelSU-Next �
 
 ### Bug 反馈：先查看，再决定是否提交
 
-开发者版本 **22.2-20261026-r1** 已加入系统管家“Bug 反馈”：
+自 **22.2-20261026-r1** 起，系统管家已加入“Bug 反馈”功能：
 
 - 自动收集与提醒默认关闭；用户开启后，仅在本机保存有限的错误类型、代码位置及版本等技术信息。
 - 本机最多20份、有效期7天，过期文件在下次使用时清理；最多每天一次静默提醒。
@@ -214,7 +214,7 @@ This unofficial project brings **Android 15 and LineageOS 22.2** to the Japanese
 
 [Downloads and release notes](https://github.com/yal3ay/xz1c-lineageos-22/releases) · [Report an issue](https://github.com/yal3ay/xz1c-lineageos-22/issues) · [Security policy](SECURITY.md) · [中文](#xperia-xz1-compact--so-02k--lineageos-222)
 
-> This is an independent project, not an official Sony or LineageOS release. Only SO-02K is the target of the documented device testing; other XZ1 Compact variants have not been verified. Features below describe the development line as documented on 2026-10-30. Read the notes for your specific build: the older default update channel does not include every feature below.
+> This is an independent project, not an official Sony or LineageOS release. Only SO-02K is the target of the documented device testing; other XZ1 Compact variants have not been verified. Features below are included in the default update channel as of 22.2-20261031-r1; check the release notes for your installed build.
 
 | | |
 | --- | --- |
@@ -222,12 +222,12 @@ This unofficial project brings **Android 15 and LineageOS 22.2** to the Japanese
 | System | Android 15 / LineageOS 22.2 |
 | Kernel | Linux 4.4.302 |
 | Android security patch level | 2026-08-01; this is not the release date |
-| Default update channel, as documented | [22.2-20261010-r6](https://github.com/yal3ay/xz1c-lineageos-22/releases/tag/22.2-20261010-r6) |
-| Developer update channel, as documented | [22.2-20261031-r1](https://github.com/yal3ay/xz1c-lineageos-22/releases/tag/22.2-20261031-r1), a prerelease with built-in Nearbo 1.0.56 and latest system fixes |
+| Default update channel, as documented | [22.2-20261031-r1](https://github.com/yal3ay/xz1c-lineageos-22/releases/tag/22.2-20261031-r1) |
+| Developer update channel, as documented | Same as the default channel ([22.2-20261031-r1](https://github.com/yal3ay/xz1c-lineageos-22/releases/tag/22.2-20261031-r1)); no newer developer build yet |
 
 ### Features at a glance
 
-> These highlights describe the development line. The older default-channel build may not include them; check the release notes for your installed version.
+> These highlights are included in the default update channel as of 22.2-20261031-r1; check the release notes for your installed version.
 
 | What you want to do | What the system offers |
 | --- | --- |
@@ -239,7 +239,7 @@ This unofficial project brings **Android 15 and LineageOS 22.2** to the Japanese
 | Open documents | View common office files, images and media locally, with search, night mode and printing. |
 | Check the weather | See the lunar calendar and Xperia weather on the lock screen, with optional humidity, wind, UV and air-quality details. |
 | Everyday use | Wake with a double tap or volume key, use SMS code prompts, configure an SD card as internal storage, and benefit from device-specific call and touch fixes. |
-| Update and report | Check for updates and manage add-ons; developer builds offer opt-in problem reports that you review before submitting. |
+| Update and report | Check for updates and manage add-ons; opt-in problem reports are available and you review them before submitting. |
 
 Audio behavior depends on the player and output device. AirPlay and sharing depend on the receiver and network; native AirDrop interoperability with every Apple device is not supported.
 
@@ -259,7 +259,7 @@ The custom **Hi-Fi Audio** page shows the output device, sample rate, bit depth 
 
 #### Built-in Nearbo app: casting, music, TV remote and local sharing
 
-Starting with **[22.2-20261030-r2](https://github.com/yal3ay/xz1c-lineageos-22/releases/tag/22.2-20261030-r2)**, the developer build includes the standalone **Nearbo** app (`com.xz1c.appleconnect`, version **1.0.56**) in `/system/app/Nearbo`, combining big-screen casting, remote control and local file sharing in one app:
+Starting with **[22.2-20261030-r2](https://github.com/yal3ay/xz1c-lineageos-22/releases/tag/22.2-20261030-r2)**, the system includes the standalone **Nearbo** app (`com.xz1c.appleconnect`, version **1.0.56**) in `/system/app/Nearbo`, combining big-screen casting, remote control and local file sharing in one app:
 
 - **Screen mirroring and video casting**: mirror the phone screen and permitted media/game audio to compatible Apple TVs, Nearbo TV receivers and AirPlay-compatible TVs or speakers on the same Wi-Fi, with full-screen or single-app sharing, picture quality and orientation options, plus original-quality video casting to supported receivers.
 - **Music streaming**: stream audio to compatible speakers or TVs with live lyrics, playback controls, per-device volume and a sleep timer.
