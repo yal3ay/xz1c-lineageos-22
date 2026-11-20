@@ -166,16 +166,11 @@ Shizuku 向用户授权的兼容工具提供部分系统能力；KernelSU-Next �
 
 ## 源码与许可
 
-这是一个基于开源系统与设备适配项目持续修改的非官方项目，源码入口包括：
+这是一个基于开源系统与设备适配项目持续修改的非官方项目，公开源码入口：
 
-- [设备配置：lilac](https://github.com/yal3ay/android_device_sony_lilac)
-- [Yoshino 共用设备配置](https://github.com/yal3ay/android_device_sony_yoshino-common)
 - [msm8998 内核源码](https://github.com/yal3ay/android_kernel_sony_msm8998)（GPL-2.0）
-- [源码清单与专有文件提取说明](https://github.com/yal3ay/xz1c_local_manifests)
-- [系统修改补丁](https://github.com/yal3ay/xz1c_lineageos_22_patches)
-- [本仓库中的补丁](patches/)
 
-Sony 专有文件和设备提取的二进制组件不随这些源码仓库公开分发，请从合法持有的设备或固件提取。各组件沿用自身许可证；本仓库许可见 [LICENSE](LICENSE)。不公开签名私钥或用户私密配置。
+各组件沿用自身许可证；本仓库许可见 [LICENSE](LICENSE)。不公开 Sony 专有文件、设备提取的二进制组件、签名私钥或用户私密配置。
 
 <details>
 <summary>项目公开签名证书指纹</summary>
@@ -320,9 +315,9 @@ For maintainers, see the [OTA release workflow](OTA_RELEASE_WORKFLOW.md). Full u
 
 ### Source, licenses and feedback
 
-Device configuration: [lilac](https://github.com/yal3ay/android_device_sony_lilac) and [Yoshino common](https://github.com/yal3ay/android_device_sony_yoshino-common). Other sources: [msm8998 kernel](https://github.com/yal3ay/android_kernel_sony_msm8998), [local manifests and extraction notes](https://github.com/yal3ay/xz1c_local_manifests), [system patches](https://github.com/yal3ay/xz1c_lineageos_22_patches), and [patches in this repository](patches/). The kernel is GPL-2.0; other components retain their own licenses, and this repository's license is in [LICENSE](LICENSE).
+Public kernel source: [msm8998 kernel](https://github.com/yal3ay/android_kernel_sony_msm8998) (GPL-2.0). Other components retain their own licenses, and this repository's license is in [LICENSE](LICENSE).
 
-Sony proprietary files and device-extracted binaries are not distributed in those source repositories; extract them from a device or firmware you legally possess. Public signing certificate fingerprints are listed in the Chinese section above; private keys are not published. Use file checksums, not certificate fingerprints, to verify downloads.
+Sony proprietary files, device-extracted binaries and private signing keys are not published. Public signing certificate fingerprints are listed in the Chinese section above. Use file checksums, not certificate fingerprints, to verify downloads.
 
 For ordinary problems, open an [issue](https://github.com/yal3ay/xz1c-lineageos-22/issues) with the device, build, steps and expected behavior, removing personal information from attachments. Report unpatched security vulnerabilities privately as described in the [security policy](SECURITY.md).
 

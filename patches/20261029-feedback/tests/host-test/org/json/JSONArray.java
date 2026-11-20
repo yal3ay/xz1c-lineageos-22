@@ -1,1 +1,0 @@
-package org.json; public class JSONArray { private final java.util.List<Object> data = new java.util.ArrayList<>(); public JSONArray(){} public JSONArray(java.util.Collection<?> c){data.addAll(c);} public int length(){return data.size();} public String getString(int i){return data.get(i).toString();} }
